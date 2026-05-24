@@ -9,15 +9,20 @@ import pl.blixy.velocityFailover.config.FailoverConfig;
 import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
 
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 public class ServerDownHandler {
 
+    private static final long REDIRECT_SETTLE_MS = 500;
+
+    private final Object plugin;
     private final ProxyServer proxy;
     private final Logger logger;
     private final FailoverConfig config;
     private final PendingReconnectRegistry pendingRegistry;
 
-    public ServerDownHandler(ProxyServer proxy, Logger logger, FailoverConfig config, PendingReconnectRegistry pendingRegistry) {
+    public ServerDownHandler(Object plugin, ProxyServer proxy, Logger logger, FailoverConfig config, PendingReconnectRegistry pendingRegistry) {
+        this.plugin = plugin;
         this.proxy = proxy;
         this.logger = logger;
         this.config = config;
@@ -25,6 +30,12 @@ public class ServerDownHandler {
     }
 
     public void handle(String serverName) {
+        proxy.getScheduler().buildTask(plugin, () -> sweepStragglers(serverName))
+                .delay(REDIRECT_SETTLE_MS, TimeUnit.MILLISECONDS)
+                .schedule();
+    }
+
+    private void sweepStragglers(String serverName) {
         Optional<RegisteredServer> serverOpt = proxy.getServer(serverName);
         if (serverOpt.isEmpty()) return;
 

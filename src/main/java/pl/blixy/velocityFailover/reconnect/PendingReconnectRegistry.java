@@ -2,6 +2,7 @@ package pl.blixy.velocityFailover.reconnect;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,5 +34,9 @@ public class PendingReconnectRegistry {
 
     public String getPendingServer(UUID playerId) {
         return pending.get(playerId);
+    }
+
+    public Set<UUID> snapshotPlayers() {
+        return Set.copyOf(pending.keySet());
     }
 }

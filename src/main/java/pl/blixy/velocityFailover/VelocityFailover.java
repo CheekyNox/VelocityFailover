@@ -10,6 +10,7 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.scheduler.ScheduledTask;
 import org.slf4j.Logger;
+import pl.blixy.velocityFailover.actionbar.WaitingActionBarTask;
 import pl.blixy.velocityFailover.command.ReloadCommand;
 import pl.blixy.velocityFailover.config.ConfigLoader;
 import pl.blixy.velocityFailover.config.FailoverConfig;
@@ -34,6 +35,7 @@ public class VelocityFailover {
     private final Path dataDirectory;
 
     private ScheduledTask recoveryTask;
+    private ScheduledTask actionBarTask;
 
     @Inject
     public VelocityFailover(ProxyServer proxy, Logger logger, @DataDirectory Path dataDirectory) {
@@ -54,6 +56,10 @@ public class VelocityFailover {
         if (recoveryTask != null) {
             recoveryTask.cancel();
             recoveryTask = null;
+        }
+        if (actionBarTask != null) {
+            actionBarTask.cancel();
+            actionBarTask = null;
         }
 
         proxy.getEventManager().unregisterListeners(this);
@@ -82,7 +88,7 @@ public class VelocityFailover {
         PendingReconnectRegistry pendingRegistry = new PendingReconnectRegistry();
         ServerStateRegistry stateRegistry = new ServerStateRegistry(config.getMonitoredServers(), config.getPingsToReady(), logger);
 
-        ServerDownHandler downHandler = new ServerDownHandler(proxy, logger, config, pendingRegistry);
+        ServerDownHandler downHandler = new ServerDownHandler(this, proxy, logger, config, pendingRegistry);
         ServerUpHandler upHandler = new ServerUpHandler(this, proxy, logger, config, stateRegistry, pendingRegistry);
 
         stateRegistry.setOnServerDown(downHandler::handle);
@@ -96,12 +102,20 @@ public class VelocityFailover {
         recoveryTask = proxy.getScheduler().buildTask(this, monitor)
                 .repeat(config.getPingIntervalMs(), TimeUnit.MILLISECONDS)
                 .schedule();
+
+        WaitingActionBarTask actionBar = new WaitingActionBarTask(proxy, config, pendingRegistry);
+        actionBarTask = proxy.getScheduler().buildTask(this, actionBar)
+                .repeat(config.getActionBarIntervalMs(), TimeUnit.MILLISECONDS)
+                .schedule();
     }
 
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
         if (recoveryTask != null) {
             recoveryTask.cancel();
+        }
+        if (actionBarTask != null) {
+            actionBarTask.cancel();
         }
     }
 }

@@ -39,3 +39,16 @@ messages:
   sent-to-limbo: "<red>The server is temporarily unavailable. You will be moved back automatically when it returns."
   reconnecting: "<green>The server is back online! Reconnecting..."
   connection-blocked: "<red>This server is currently unavailable. Please try again in a moment."
+  # Action bar shown to players waiting on the limbo server. {spinner} is replaced with the current frame.
+  waiting-action-bar: "<yellow>Connecting to the server <gray>{spinner}"
+
+# Action bar animation for players waiting on limbo
+action-bar:
+  # Frame update interval (ms)
+  interval-ms: 400
+  # Spinner frames cycled in order
+  spinner-frames:
+    - "[|]"
+    - "[/]"
+    - "[-]"
+    - "[\]"

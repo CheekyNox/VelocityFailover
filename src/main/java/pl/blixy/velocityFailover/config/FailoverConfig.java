@@ -18,6 +18,9 @@ public class FailoverConfig {
     private final String sentToLimboMessage;
     private final String reconnectingMessage;
     private final String connectionBlockedMessage;
+    private final String waitingActionBarMessage;
+    private final long actionBarIntervalMs;
+    private final List<String> spinnerFrames;
 
     @SuppressWarnings("unchecked")
     public FailoverConfig(Map<String, Object> yaml) {
@@ -44,6 +47,11 @@ public class FailoverConfig {
         this.sentToLimboMessage = (String) messages.getOrDefault("sent-to-limbo", "<red>The server is temporarily unavailable. You will be moved back automatically when it returns.");
         this.reconnectingMessage = (String) messages.getOrDefault("reconnecting", "<green>The server is back online! Reconnecting...");
         this.connectionBlockedMessage = (String) messages.getOrDefault("connection-blocked", "<red>This server is currently unavailable. Please try again in a moment.");
+        this.waitingActionBarMessage = (String) messages.getOrDefault("waiting-action-bar", "<yellow>Connecting to the server <gray>{spinner}");
+
+        Map<String, Object> actionBar = (Map<String, Object>) yaml.getOrDefault("action-bar", Map.of());
+        this.actionBarIntervalMs = toLong(actionBar.getOrDefault("interval-ms", 400));
+        this.spinnerFrames = (List<String>) actionBar.getOrDefault("spinner-frames", List.of("[|]", "[/]", "[-]", "[\\]"));
     }
 
     private static long toLong(Object value) {
@@ -96,5 +104,17 @@ public class FailoverConfig {
 
     public List<String> getShutdownKeywords() {
         return shutdownKeywords;
+    }
+
+    public String getWaitingActionBarMessage() {
+        return waitingActionBarMessage;
+    }
+
+    public long getActionBarIntervalMs() {
+        return actionBarIntervalMs;
+    }
+
+    public List<String> getSpinnerFrames() {
+        return spinnerFrames;
     }
 }
