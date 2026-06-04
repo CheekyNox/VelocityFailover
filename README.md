@@ -48,7 +48,8 @@ All of this happens seamlessly — players see a short message, wait on limbo, a
 limbo-server: "limbo"
 
 # Server groups to monitor.
-# Groups are for organization only — each server is tracked individually.
+# Groups are for ORGANIZATION ONLY - there is no failover within a group.
+# Each server is monitored and blocked individually.
 groups:
   lobby:
     servers:
@@ -59,13 +60,19 @@ groups:
       - "spawn1"
       - "spawn2"
 
-# Recovery monitor settings
+# Recovery monitor settings (pings ONLY OFFLINE servers)
 recovery:
-  ping-interval-ms: 2000       # How often to ping downed servers
-  pings-to-ready: 3            # Successful pings in a row before recovery starts
-  grace-period-ms: 5000        # Extra wait after pings pass (lets plugins load)
-  transfer-interval-ms: 50     # Delay between each player transfer
-  ping-timeout-ms: 2000        # Timeout for a single ping
+  # Interval between pings for offline servers (ms)
+  ping-interval-ms: 2000
+  # Number of successful pings in a row = server considered ready for recovery
+  pings-to-ready: 3
+  # Additional wait time AFTER pings-to-ready before starting to transfer players (ms)
+  # Gives the server time to fully load all plugins
+  grace-period-ms: 5000
+  # Player transfer interval after grace period (ms) - 1 player per tick
+  transfer-interval-ms: 50
+  # Single ping timeout (ms)
+  ping-timeout-ms: 2000
 
 # Kick reasons that indicate a server shutdown (checked via String.contains)
 # If a player is kicked with one of these reasons, the server will be marked as offline
@@ -78,6 +85,19 @@ messages:
   sent-to-limbo: "<red>The server is temporarily unavailable. You will be moved back automatically when it returns."
   reconnecting: "<green>The server is back online! Reconnecting..."
   connection-blocked: "<red>This server is currently unavailable. Please try again in a moment."
+  # Action bar shown to players waiting on the limbo server. {spinner} is replaced with the current frame.
+  waiting-action-bar: "<yellow>Connecting to the server <gray>{spinner}"
+
+# Action bar animation for players waiting on limbo
+action-bar:
+  # Frame update interval (ms)
+  interval-ms: 400
+  # Spinner frames cycled in order
+  spinner-frames:
+    - "[|]"
+    - "[/]"
+    - "[-]"
+    - "[\\]"
 ```
 
 ### Important notes
