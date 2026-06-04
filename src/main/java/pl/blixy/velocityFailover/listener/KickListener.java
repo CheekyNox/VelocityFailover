@@ -11,7 +11,6 @@ import pl.blixy.velocityFailover.config.FailoverConfig;
 import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
 import pl.blixy.velocityFailover.server.ServerStateRegistry;
 
-import java.util.List;
 import java.util.Optional;
 
 public class KickListener {
@@ -38,22 +37,12 @@ public class KickListener {
 
         stateRegistry.markOffline(serverName);
 
-        boolean wasOnServer = event.getPlayer().getCurrentServer()
-                .map(conn -> conn.getServerInfo().getName().equals(serverName))
-                .orElse(false);
+        Optional<RegisteredServer> limboOpt = proxy.getServer(config.getLimboServer());
+        if (limboOpt.isEmpty()) return;
 
-        if (wasOnServer) {
-            pendingRegistry.register(event.getPlayer().getUniqueId(), serverName);
-
-            Optional<RegisteredServer> limboOpt = proxy.getServer(config.getLimboServer());
-            if (limboOpt.isPresent()) {
-                Component message = MiniMessage.miniMessage().deserialize(config.getSentToLimboMessage());
-                event.setResult(KickedFromServerEvent.RedirectPlayer.create(limboOpt.get(), message));
-            }
-        } else {
-            Component message = MiniMessage.miniMessage().deserialize(config.getConnectionBlockedMessage());
-            event.setResult(KickedFromServerEvent.Notify.create(message));
-        }
+        pendingRegistry.register(event.getPlayer().getUniqueId(), serverName);
+        Component message = MiniMessage.miniMessage().deserialize(config.getSentToLimboMessage());
+        event.setResult(KickedFromServerEvent.RedirectPlayer.create(limboOpt.get(), message));
     }
 
     private boolean isShutdownKick(KickedFromServerEvent event) {
