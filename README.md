@@ -27,7 +27,7 @@ All of this happens seamlessly — players see a short message, wait on limbo, a
 ## Requirements
 
 - Velocity 3.4.0+
-- Java 17+
+- Java 21+
 - A limbo server registered in `velocity.toml` (e.g. [PicoLimbo](https://github.com/Quozul/PicoLimbo) or an empty Paper server)
 
 ## Installation
