@@ -1,136 +1,77 @@
 # VelocityFailover
 
-A lightweight Velocity proxy plugin that automatically handles server crashes and restarts — no player left behind.
+When one of your backend servers crashes or restarts, players on it are moved to a limbo server, and once the server is back they are moved back. Nobody gets the disconnect screen.
 
-## What does it do?
+## How it works
 
-When a backend server goes down (crash, restart, `/stop`), VelocityFailover:
+1. A server goes down. Velocity kicks its players with a reason like "Server closed".
+2. The plugin sees that kick, marks the server as down and sends the player to limbo instead.
+3. While they wait, a small spinner shows in their action bar.
+4. The plugin pings the downed server until it answers a few times in a row, then waits a moment so its plugins can load.
+5. Players are moved back one at a time, so a freshly started server is not hit all at once.
+6. Anyone trying to join the server while it is down gets a message instead.
 
-1. **Instantly detects** the server is down
-2. **Moves affected players** to a limbo server
-3. **Monitors** the downed server for recovery
-4. **Automatically reconnects** players back to their original server once it's ready
-5. **Blocks** other players from joining unavailable servers with a friendly message
+Only downed servers are pinged. When everything is running, the plugin does nothing.
 
-All of this happens seamlessly — players see a short message, wait on limbo, and get moved back automatically.
-
-## Why VelocityFailover?
-
-- **Zero external dependencies** — only the Velocity API, nothing else
-- **Extremely lightweight** — no constant heartbeat pinging all servers. Recovery pings run *only* on servers that are actually down
-- **Instant detection** — uses Velocity's kick events instead of slow polling intervals. Players are redirected in milliseconds, not seconds
-- **Gradual reconnection** — players are transferred back one at a time to avoid overloading a freshly started server
-- **Smart kick detection** — distinguishes between server crashes and normal kicks (bans, anticheat, etc.). A banned player won't end up on limbo
-- **Connection blocking** — players trying to manually join a recovering server get a message instead of being thrown into limbo
-- **No Paper plugin needed** — runs entirely on the Velocity proxy side
+Normal kicks (bans, anticheat and so on) are left alone. Only reasons that match `shutdown-keywords` count as a crash.
 
 ## Requirements
 
 - Velocity 4.x
-- Java 25+
-- A limbo server registered in `velocity.toml` (e.g. [PicoLimbo](https://github.com/Quozul/PicoLimbo) or an empty Paper server)
+- Java 25
+- A limbo server registered in `velocity.toml`, for example [PicoLimbo](https://github.com/Quozul/PicoLimbo) or an empty Paper server
 
-## Installation
+## Setup
 
-1. Download the latest `.jar` from [Releases](../../releases)
-2. Place it in your Velocity `plugins/` folder
-3. Start the proxy — a default `config.yml` will be generated in `plugins/velocityfailover/`
-4. Edit `config.yml` to match your server setup
-5. Restart the proxy or use /failoverreload
+1. Drop the jar into the proxy's `plugins/` folder and start the proxy once.
+2. Open `plugins/velocityfailover/config.yml` and fill in your limbo server and the servers to watch.
+3. Run `/failoverreload` (permission `velocityfailover.reload`) or restart the proxy.
 
-## Commands and permissions
-/failoverreload - reloads config (permission: velocityfailover.reload) 
-
-## Configuration
+## Config
 
 ```yaml
-# Name of the limbo server registered in velocity.toml
 limbo-server: "limbo"
 
-# Server groups to monitor.
-# Groups are for ORGANIZATION ONLY - there is no failover within a group.
-# Each server is monitored and blocked individually.
+# Servers to watch. Groups are only for keeping the list tidy.
 groups:
   lobby:
-    servers:
-      - "lobby1"
-      - "lobby2"
+    servers: ["lobby1", "lobby2"]
   spawn:
-    servers:
-      - "spawn1"
-      - "spawn2"
+    servers: ["spawn1", "spawn2"]
 
-# Recovery monitor settings (pings ONLY OFFLINE servers)
 recovery:
-  # Interval between pings for offline servers (ms)
-  ping-interval-ms: 2000
-  # Number of successful pings in a row = server considered ready for recovery
-  pings-to-ready: 3
-  # Additional wait time AFTER pings-to-ready before starting to transfer players (ms)
-  # Gives the server time to fully load all plugins
-  grace-period-ms: 5000
-  # Player transfer interval after grace period (ms) - 1 player per tick
-  transfer-interval-ms: 50
-  # Single ping timeout (ms)
+  ping-interval-ms: 2000      # how often a downed server is pinged
+  pings-to-ready: 3           # answers in a row before it counts as back
+  grace-period-ms: 5000       # extra wait so its plugins finish loading
+  transfer-interval-ms: 50    # pause between moving one player and the next
   ping-timeout-ms: 2000
 
-# Kick reasons that indicate a server shutdown (checked via String.contains)
-# If a player is kicked with one of these reasons, the server will be marked as offline
+# Kick reasons that mean the server went down, matched with "contains".
 shutdown-keywords:
   - "Server closed"
   - "Server shutting down"
 
-# Messages sent to players (MiniMessage format)
+# MiniMessage. {spinner} in the action bar is replaced with the current frame.
 messages:
   sent-to-limbo: "<red>The server is temporarily unavailable. You will be moved back automatically when it returns."
   reconnecting: "<green>The server is back online! Reconnecting..."
   connection-blocked: "<red>This server is currently unavailable. Please try again in a moment."
-  # Action bar shown to players waiting on the limbo server. {spinner} is replaced with the current frame.
   waiting-action-bar: "<yellow>Connecting to the server <gray>{spinner}"
 
-# Action bar animation for players waiting on limbo
 action-bar:
-  # Frame update interval (ms)
   interval-ms: 400
-  # Spinner frames cycled in order
-  spinner-frames:
-    - "[|]"
-    - "[/]"
-    - "[-]"
-    - "[\\]"
+  spinner-frames: ["[|]", "[/]", "[-]", "[\\]"]
 ```
 
-### Important notes
+Server names must match `velocity.toml` exactly. Do not list the limbo server itself.
 
-- The **limbo server must not be listed** in any monitored group — it is always treated as available
-- Server names in the config must match exactly what is in your `velocity.toml`
-- Messages support [MiniMessage](https://docs.advntr.dev/minimessage/format.html) formatting
+## Good to know
 
-## How it works
+- A player who leaves while waiting is forgotten. When they come back, your usual hub or fallback plugin takes over.
+- A player who goes somewhere else on their own while waiting is forgotten too.
+- If the server dies again mid-transfer, players already moved land back on limbo and the whole cycle starts over.
+- This is not a hub plugin. It only handles crashes and restarts.
 
-```
-Player on spawn2 ──> spawn2 crashes
-                          │
-          FailoverListener catches the crash kick
-                          │
-          Player redirected to limbo instantly
-                          │
-          RecoveryMonitor starts pinging spawn2
-                          │
-          3 successful pings ──> 5s grace period
-                          │
-          Players transferred back one by one
-                          │
-          spawn2 marked as ONLINE again
-```
+## License
 
-## FAQ
-
-**Q: What if a player disconnects while waiting on limbo?**
-They are removed from the reconnect queue. When they rejoin, your existing routing plugin handles them normally.
-
-**Q: What if the server crashes again during player transfers?**
-The plugin handles this gracefully. Already-transferred players get kicked back to limbo. Remaining players stay on limbo. Recovery restarts from scratch.
-
-**Q: Does this replace my hub plugin?**
-No. This only handles crashes/restarts.
+MIT
