@@ -2,8 +2,8 @@ package pl.blixy.velocityFailover.server;
 
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
-import org.slf4j.Logger;
 import pl.blixy.velocityFailover.config.FailoverConfig;
+import pl.blixy.velocityFailover.handler.ServerUpHandler;
 
 import java.util.Optional;
 import java.util.Set;
@@ -12,30 +12,36 @@ import java.util.concurrent.TimeUnit;
 public class RecoveryMonitor implements Runnable {
 
     private final ProxyServer proxy;
-    private final ServerStateRegistry stateRegistry;
+    private final ServerStates stateRegistry;
+    private final ServerUpHandler upHandler;
     private final long pingTimeoutMs;
 
-    public RecoveryMonitor(ProxyServer proxy, FailoverConfig config, ServerStateRegistry stateRegistry) {
+    public RecoveryMonitor(ProxyServer proxy, FailoverConfig config, ServerStates stateRegistry, ServerUpHandler upHandler) {
         this.proxy = proxy;
         this.stateRegistry = stateRegistry;
+        this.upHandler = upHandler;
         this.pingTimeoutMs = config.recovery().pingTimeout().toMillis();
     }
 
     @Override
     public void run() {
-        Set<String> offline = stateRegistry.getOfflineServers();
+        Set<String> offline = stateRegistry.offline();
         if (offline.isEmpty()) return;
 
         for (String serverName : offline) {
             Optional<RegisteredServer> serverOpt = proxy.getServer(serverName);
             if (serverOpt.isEmpty()) {
-                stateRegistry.recordRecoveryPing(serverName, false);
+                stateRegistry.recordPing(serverName, false);
                 continue;
             }
 
             serverOpt.get().ping()
                     .orTimeout(pingTimeoutMs, TimeUnit.MILLISECONDS)
-                    .whenComplete((result, error) -> stateRegistry.recordRecoveryPing(serverName, error == null));
+                    .whenComplete((_, error) -> {
+                        if (stateRegistry.recordPing(serverName, error == null)) {
+                            upHandler.handle(serverName);
+                        }
+                    });
         }
     }
 }

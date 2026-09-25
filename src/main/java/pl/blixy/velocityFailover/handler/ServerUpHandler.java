@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import pl.blixy.velocityFailover.config.FailoverConfig;
 import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
 import pl.blixy.velocityFailover.server.ServerState;
-import pl.blixy.velocityFailover.server.ServerStateRegistry;
+import pl.blixy.velocityFailover.server.ServerStates;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,10 +21,10 @@ public class ServerUpHandler {
     private final ProxyServer proxy;
     private final Logger logger;
     private final FailoverConfig config;
-    private final ServerStateRegistry stateRegistry;
+    private final ServerStates stateRegistry;
     private final PendingReconnectRegistry pendingRegistry;
 
-    public ServerUpHandler(Object plugin, ProxyServer proxy, Logger logger, FailoverConfig config, ServerStateRegistry stateRegistry, PendingReconnectRegistry pendingRegistry) {
+    public ServerUpHandler(Object plugin, ProxyServer proxy, Logger logger, FailoverConfig config, ServerStates stateRegistry, PendingReconnectRegistry pendingRegistry) {
         this.plugin = plugin;
         this.proxy = proxy;
         this.logger = logger;
@@ -40,7 +40,7 @@ public class ServerUpHandler {
     }
 
     private void startTransfer(String serverName) {
-        if (stateRegistry.getState(serverName) != ServerState.RECOVERY) {
+        if (stateRegistry.state(serverName) != ServerState.RECOVERY) {
             logger.info("[Failover] Server {} no longer in RECOVERY, aborting transfer", serverName);
             return;
         }
@@ -65,7 +65,7 @@ public class ServerUpHandler {
 
         ScheduledTask[] taskHolder = new ScheduledTask[1];
         taskHolder[0] = proxy.getScheduler().buildTask(plugin, () -> {
-            if (stateRegistry.getState(serverName) != ServerState.RECOVERY) {
+            if (stateRegistry.state(serverName) != ServerState.RECOVERY) {
                 logger.warn("[Failover] Server {} left RECOVERY during transfer, cancelling", serverName);
                 taskHolder[0].cancel();
                 return;

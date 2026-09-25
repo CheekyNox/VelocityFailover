@@ -4,15 +4,15 @@ import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.player.ServerPreConnectEvent;
 import pl.blixy.velocityFailover.config.FailoverConfig;
 import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
-import pl.blixy.velocityFailover.server.ServerStateRegistry;
+import pl.blixy.velocityFailover.server.ServerStates;
 
 public class ConnectionListener {
 
     private final FailoverConfig config;
-    private final ServerStateRegistry stateRegistry;
+    private final ServerStates stateRegistry;
     private final PendingReconnectRegistry pendingRegistry;
 
-    public ConnectionListener(FailoverConfig config, ServerStateRegistry stateRegistry, PendingReconnectRegistry pendingRegistry) {
+    public ConnectionListener(FailoverConfig config, ServerStates stateRegistry, PendingReconnectRegistry pendingRegistry) {
         this.config = config;
         this.stateRegistry = stateRegistry;
         this.pendingRegistry = pendingRegistry;

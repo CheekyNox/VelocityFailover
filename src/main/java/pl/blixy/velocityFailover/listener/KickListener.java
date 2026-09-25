@@ -8,7 +8,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import pl.blixy.velocityFailover.config.FailoverConfig;
 import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
-import pl.blixy.velocityFailover.server.ServerStateRegistry;
+import pl.blixy.velocityFailover.handler.ServerDownHandler;
+import pl.blixy.velocityFailover.server.ServerStates;
 
 import java.util.Optional;
 
@@ -16,14 +17,16 @@ public class KickListener {
 
     private final ProxyServer proxy;
     private final FailoverConfig config;
-    private final ServerStateRegistry stateRegistry;
+    private final ServerStates stateRegistry;
     private final PendingReconnectRegistry pendingRegistry;
+    private final ServerDownHandler downHandler;
 
-    public KickListener(ProxyServer proxy, FailoverConfig config, ServerStateRegistry stateRegistry, PendingReconnectRegistry pendingRegistry) {
+    public KickListener(ProxyServer proxy, FailoverConfig config, ServerStates stateRegistry, PendingReconnectRegistry pendingRegistry, ServerDownHandler downHandler) {
         this.proxy = proxy;
         this.config = config;
         this.stateRegistry = stateRegistry;
         this.pendingRegistry = pendingRegistry;
+        this.downHandler = downHandler;
     }
 
     @Subscribe(priority = 100)
@@ -34,7 +37,9 @@ public class KickListener {
 
         if (!isShutdownKick(event)) return;
 
-        stateRegistry.markOffline(serverName);
+        if (stateRegistry.markOffline(serverName)) {
+            downHandler.handle(serverName);
+        }
 
         Optional<RegisteredServer> limboOpt = proxy.getServer(config.limbo());
         if (limboOpt.isEmpty()) return;

@@ -21,7 +21,7 @@ import pl.blixy.velocityFailover.listener.DisconnectListener;
 import pl.blixy.velocityFailover.listener.KickListener;
 import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
 import pl.blixy.velocityFailover.server.RecoveryMonitor;
-import pl.blixy.velocityFailover.server.ServerStateRegistry;
+import pl.blixy.velocityFailover.server.ServerStates;
 
 import java.nio.file.Path;
 
@@ -85,19 +85,16 @@ public class VelocityFailover {
         logger.info("[Failover] Monitoring {} servers, limbo: {}", config.servers().size(), config.limbo());
 
         PendingReconnectRegistry pendingRegistry = new PendingReconnectRegistry();
-        ServerStateRegistry stateRegistry = new ServerStateRegistry(config.servers(), config.recovery().pingsToReady(), logger);
+        ServerStates stateRegistry = new ServerStates(config.servers(), config.recovery().pingsToReady(), logger);
 
         ServerDownHandler downHandler = new ServerDownHandler(this, proxy, logger, config, pendingRegistry);
         ServerUpHandler upHandler = new ServerUpHandler(this, proxy, logger, config, stateRegistry, pendingRegistry);
 
-        stateRegistry.setOnServerDown(downHandler::handle);
-        stateRegistry.setOnServerRecovering(upHandler::handle);
-
-        proxy.getEventManager().register(this, new KickListener(proxy, config, stateRegistry, pendingRegistry));
+        proxy.getEventManager().register(this, new KickListener(proxy, config, stateRegistry, pendingRegistry, downHandler));
         proxy.getEventManager().register(this, new ConnectionListener(config, stateRegistry, pendingRegistry));
         proxy.getEventManager().register(this, new DisconnectListener(config, pendingRegistry));
 
-        RecoveryMonitor monitor = new RecoveryMonitor(proxy, config, stateRegistry);
+        RecoveryMonitor monitor = new RecoveryMonitor(proxy, config, stateRegistry, upHandler);
         recoveryTask = proxy.getScheduler().buildTask(this, monitor)
                 .repeat(config.recovery().pingInterval())
                 .schedule();
