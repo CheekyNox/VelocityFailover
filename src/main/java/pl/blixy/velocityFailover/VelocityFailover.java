@@ -20,18 +20,23 @@ import pl.blixy.velocityFailover.reconnect.WaitingPlayers;
 import pl.blixy.velocityFailover.server.RecoveryMonitor;
 import pl.blixy.velocityFailover.server.ServerStates;
 
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
-@Plugin(id = "velocityfailover", name = "VelocityFailover", version = BuildConstants.VERSION,
-        url = "blixy.pl", authors = {"blixy77"})
-public class VelocityFailover {
+/**
+ * Keeps players on the network through a backend crash: a shutdown kick parks them on limbo, the
+ * server is pinged until it answers, then they are moved back one at a time. Everything is rebuilt
+ * from the config on {@code /failoverreload}, so the listener and both tasks are torn down first.
+ */
+@Plugin(id = "velocityfailover", name = "VelocityFailover", version = BuildConstants.VERSION, url = "blixy.pl", authors = "blixy77")
+public final class VelocityFailover {
 
     private final ProxyServer proxy;
     private final Logger logger;
     private final Path dataDirectory;
-
-    private ScheduledTask recoveryTask;
-    private ScheduledTask actionBarTask;
+    private final List<ScheduledTask> tasks = new ArrayList<>();
 
     @Inject
     public VelocityFailover(ProxyServer proxy, Logger logger, @DataDirectory Path dataDirectory) {
@@ -41,35 +46,28 @@ public class VelocityFailover {
     }
 
     @Subscribe
-    public void onProxyInitialization(ProxyInitializeEvent event) {
-        setupFailover();
+    public void onInitialize(ProxyInitializeEvent event) {
+        start();
+        CommandManager commands = proxy.getCommandManager();
+        commands.register(commands.metaBuilder("failoverreload").plugin(this).build(), new ReloadCommand(this));
+    }
 
-        CommandManager commandManager = proxy.getCommandManager();
-        commandManager.register(commandManager.metaBuilder("failoverreload").plugin(this).build(), new ReloadCommand(this));
+    @Subscribe
+    public void onShutdown(ProxyShutdownEvent event) {
+        stop();
     }
 
     public void reload() {
-        if (recoveryTask != null) {
-            recoveryTask.cancel();
-            recoveryTask = null;
-        }
-        if (actionBarTask != null) {
-            actionBarTask.cancel();
-            actionBarTask = null;
-        }
-
-        proxy.getEventManager().unregisterListeners(this);
-
-        setupFailover();
-
+        stop();
+        start();
         logger.info("[Failover] Configuration reloaded.");
     }
 
-    private void setupFailover() {
+    private void start() {
         FailoverConfig config;
         try {
             config = ConfigLoader.load(dataDirectory);
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("[Failover] Failed to load config!", e);
             return;
         }
@@ -80,32 +78,22 @@ public class VelocityFailover {
         }
 
         logger.info("[Failover] Monitoring {} servers, limbo: {}", config.servers().size(), config.limbo());
+        WaitingPlayers waiting = new WaitingPlayers();
+        ServerStates states = new ServerStates(config.servers(), config.recovery().pingsToReady(), logger);
+        Failover failover = new Failover(this, proxy, logger, config, states, waiting);
 
-        WaitingPlayers pendingRegistry = new WaitingPlayers();
-        ServerStates stateRegistry = new ServerStates(config.servers(), config.recovery().pingsToReady(), logger);
-
-        Failover failover = new Failover(this, proxy, logger, config, stateRegistry, pendingRegistry);
-
-        proxy.getEventManager().register(this, new FailoverListener(proxy, config, stateRegistry, pendingRegistry, failover));
-
-        RecoveryMonitor monitor = new RecoveryMonitor(proxy, config, stateRegistry, failover);
-        recoveryTask = proxy.getScheduler().buildTask(this, monitor)
+        proxy.getEventManager().register(this, new FailoverListener(proxy, config, states, waiting, failover));
+        tasks.add(proxy.getScheduler().buildTask(this, new RecoveryMonitor(proxy, config, states, failover))
                 .repeat(config.recovery().pingInterval())
-                .schedule();
-
-        WaitingActionBar actionBar = new WaitingActionBar(proxy, config, pendingRegistry);
-        actionBarTask = proxy.getScheduler().buildTask(this, actionBar)
+                .schedule());
+        tasks.add(proxy.getScheduler().buildTask(this, new WaitingActionBar(proxy, config, waiting))
                 .repeat(config.actionBar().interval())
-                .schedule();
+                .schedule());
     }
 
-    @Subscribe
-    public void onProxyShutdown(ProxyShutdownEvent event) {
-        if (recoveryTask != null) {
-            recoveryTask.cancel();
-        }
-        if (actionBarTask != null) {
-            actionBarTask.cancel();
-        }
+    private void stop() {
+        tasks.forEach(ScheduledTask::cancel);
+        tasks.clear();
+        proxy.getEventManager().unregisterListeners(this);
     }
 }
