@@ -58,7 +58,8 @@ messages:
   connection-blocked: "<red>This server is currently unavailable. Please try again in a moment."
   waiting-action-bar: "<yellow>Connecting to the server <gray>{spinner}"
 
-# Optional title/subtitle pairs shown together with the matching chat message.
+# Title/subtitle pairs shown together with the matching chat message.
+# These defaults also apply to existing configs without this section.
 titles:
   fade-in-ms: 300
   stay-ms: 2500
@@ -80,7 +81,7 @@ action-bar:
 
 Server names must match `velocity.toml` exactly. Do not list the limbo server itself.
 
-Titles use MiniMessage too. Remove an event from `titles` (or leave both of its fields empty) to keep that event chat-only. Existing configs without a `titles` section continue to work unchanged.
+Titles use MiniMessage too. Existing configs without a `titles` section automatically use the defaults above. Set both fields of an event to `""` to keep that event chat-only.
 
 ## Good to know
 

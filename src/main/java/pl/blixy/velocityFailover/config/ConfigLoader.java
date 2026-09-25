@@ -67,17 +67,24 @@ public final class ConfigLoader {
                         recovery.millis("ping-timeout-ms", 2000)),
                 root.strings("shutdown-keywords", List.of("Server closed", "Server shutting down")),
                 new FailoverConfig.Messages(
-                        notification(messages, titles, "sent-to-limbo", "<red>The server is temporarily unavailable. You will be moved back automatically when it returns.", titleTimes),
-                        notification(messages, titles, "reconnecting", "<green>The server is back online! Reconnecting...", titleTimes),
-                        notification(messages, titles, "connection-blocked", "<red>This server is currently unavailable. Please try again in a moment.", titleTimes)),
+                        notification(messages, titles, "sent-to-limbo",
+                                "<red>The server is temporarily unavailable. You will be moved back automatically when it returns.",
+                                "<red><bold>Server unavailable</bold>", "<gray>You will be moved back automatically", titleTimes),
+                        notification(messages, titles, "reconnecting",
+                                "<green>The server is back online! Reconnecting...",
+                                "<green><bold>Server is back online!</bold>", "<gray>Reconnecting...", titleTimes),
+                        notification(messages, titles, "connection-blocked",
+                                "<red>This server is currently unavailable. Please try again in a moment.",
+                                "<red><bold>Server unavailable</bold>", "<gray>Please try again in a moment", titleTimes)),
                 new FailoverConfig.ActionBar(actionBar.millis("interval-ms", 400), frames));
     }
 
     private static FailoverConfig.Notification notification(Section messages, Section titles, String key,
-                                                            String fallback, Title.Times times) {
+                                                            String fallback, String fallbackTitle,
+                                                            String fallbackSubtitle, Title.Times times) {
         Section configuredTitle = titles.section(key);
-        String heading = configuredTitle.string("title", "");
-        String subtitle = configuredTitle.string("subtitle", "");
+        String heading = configuredTitle.string("title", fallbackTitle);
+        String subtitle = configuredTitle.string("subtitle", fallbackSubtitle);
         Optional<Title> title = heading.isBlank() && subtitle.isBlank()
                 ? Optional.empty()
                 : Optional.of(Title.title(

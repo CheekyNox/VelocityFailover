@@ -22,7 +22,7 @@ class ConfigLoaderTest {
     Path directory;
 
     @Test
-    void keepsExistingConfigsChatOnly() throws IOException {
+    void addsDefaultTitlesToExistingConfigs() throws IOException {
         writeConfig("""
                 messages:
                   sent-to-limbo: "Waiting"
@@ -33,9 +33,24 @@ class ConfigLoaderTest {
         FailoverConfig config = ConfigLoader.load(directory);
 
         assertEquals("Waiting", PLAIN.serialize(config.messages().sentToLimbo().chat()));
+        assertEquals("Server unavailable", PLAIN.serialize(config.messages().sentToLimbo().title().orElseThrow().title()));
+        assertEquals("Server is back online!", PLAIN.serialize(config.messages().reconnecting().title().orElseThrow().title()));
+        assertEquals("Server unavailable", PLAIN.serialize(config.messages().connectionBlocked().title().orElseThrow().title()));
+    }
+
+    @Test
+    void allowsDisablingADefaultTitle() throws IOException {
+        writeConfig("""
+                titles:
+                  sent-to-limbo:
+                    title: ""
+                    subtitle: ""
+                """);
+
+        FailoverConfig config = ConfigLoader.load(directory);
+
         assertTrue(config.messages().sentToLimbo().title().isEmpty());
-        assertTrue(config.messages().reconnecting().title().isEmpty());
-        assertTrue(config.messages().connectionBlocked().title().isEmpty());
+        assertTrue(config.messages().reconnecting().title().isPresent());
     }
 
     @Test
@@ -60,7 +75,7 @@ class ConfigLoaderTest {
         assertEquals(Duration.ofMillis(150), times.fadeIn());
         assertEquals(Duration.ofMillis(1800), times.stay());
         assertEquals(Duration.ofMillis(350), times.fadeOut());
-        assertTrue(config.messages().reconnecting().title().isEmpty());
+        assertTrue(config.messages().reconnecting().title().isPresent());
     }
 
     private void writeConfig(String yaml) throws IOException {

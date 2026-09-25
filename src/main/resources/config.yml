@@ -42,8 +42,9 @@ messages:
   # Action bar shown to players waiting on the limbo server. {spinner} is replaced with the current frame.
   waiting-action-bar: "<yellow>Connecting to the server <gray>{spinner}"
 
-# Optional titles shown together with the matching chat messages.
-# Leave both title and subtitle empty (or remove an event) to disable its title.
+# Titles shown together with the matching chat messages.
+# These defaults also apply to existing configs without this section.
+# Set both title and subtitle to "" to disable a title.
 titles:
   fade-in-ms: 300
   stay-ms: 2500
