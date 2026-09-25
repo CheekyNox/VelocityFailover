@@ -3,7 +3,6 @@ package pl.blixy.velocityFailover.handler;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.slf4j.Logger;
 import pl.blixy.velocityFailover.config.FailoverConfig;
 import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
@@ -39,9 +38,9 @@ public class ServerDownHandler {
         Optional<RegisteredServer> serverOpt = proxy.getServer(serverName);
         if (serverOpt.isEmpty()) return;
 
-        Optional<RegisteredServer> limboOpt = proxy.getServer(config.getLimboServer());
+        Optional<RegisteredServer> limboOpt = proxy.getServer(config.limbo());
         if (limboOpt.isEmpty()) {
-            logger.error("[Failover] CRITICAL: Limbo server '{}' not found! Cannot redirect players.", config.getLimboServer());
+            logger.error("[Failover] CRITICAL: Limbo server '{}' not found! Cannot redirect players.", config.limbo());
             return;
         }
 
@@ -53,7 +52,7 @@ public class ServerDownHandler {
                 continue;
             }
 
-            player.sendMessage(MiniMessage.miniMessage().deserialize(config.getSentToLimboMessage()));
+            player.sendMessage(config.messages().sentToLimbo());
             player.createConnectionRequest(limbo).connect()
                     .whenComplete((result, error) -> {
                         if (error != null) {

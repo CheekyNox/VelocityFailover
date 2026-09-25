@@ -4,7 +4,6 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.scheduler.ScheduledTask;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.slf4j.Logger;
 import pl.blixy.velocityFailover.config.FailoverConfig;
 import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
@@ -15,7 +14,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
 
 public class ServerUpHandler {
 
@@ -37,7 +35,7 @@ public class ServerUpHandler {
 
     public void handle(String serverName) {
         proxy.getScheduler().buildTask(plugin, () -> startTransfer(serverName))
-                .delay(config.getGracePeriodMs(), TimeUnit.MILLISECONDS)
+                .delay(config.recovery().gracePeriod())
                 .schedule();
     }
 
@@ -91,7 +89,7 @@ public class ServerUpHandler {
             Player player = playerOpt.get();
 
             boolean onLimbo = player.getCurrentServer()
-                    .map(conn -> conn.getServerInfo().getName().equals(config.getLimboServer()))
+                    .map(conn -> conn.getServerInfo().getName().equals(config.limbo()))
                     .orElse(false);
 
             if (!onLimbo) {
@@ -99,7 +97,7 @@ public class ServerUpHandler {
                 return;
             }
 
-            player.sendMessage(MiniMessage.miniMessage().deserialize(config.getReconnectingMessage()));
+            player.sendMessage(config.messages().reconnecting());
             player.createConnectionRequest(server).connect()
                     .whenComplete((result, error) -> {
                         pendingRegistry.remove(uuid);
@@ -107,6 +105,6 @@ public class ServerUpHandler {
                             logger.warn("[Failover] Failed to transfer {} to {}: {}", player.getUsername(), serverName, error.getMessage());
                         }
                     });
-        }).repeat(config.getTransferIntervalMs(), TimeUnit.MILLISECONDS).schedule();
+        }).repeat(config.recovery().transferInterval()).schedule();
     }
 }

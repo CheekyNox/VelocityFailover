@@ -24,7 +24,6 @@ import pl.blixy.velocityFailover.server.RecoveryMonitor;
 import pl.blixy.velocityFailover.server.ServerStateRegistry;
 
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
 
 @Plugin(id = "velocityfailover", name = "VelocityFailover", version = BuildConstants.VERSION,
         url = "blixy.pl", authors = {"blixy77"})
@@ -78,15 +77,15 @@ public class VelocityFailover {
             return;
         }
 
-        if (config.getMonitoredServers().isEmpty()) {
+        if (config.servers().isEmpty()) {
             logger.warn("[Failover] No monitored servers configured. Plugin disabled.");
             return;
         }
 
-        logger.info("[Failover] Monitoring {} servers, limbo: {}", config.getMonitoredServers().size(), config.getLimboServer());
+        logger.info("[Failover] Monitoring {} servers, limbo: {}", config.servers().size(), config.limbo());
 
         PendingReconnectRegistry pendingRegistry = new PendingReconnectRegistry();
-        ServerStateRegistry stateRegistry = new ServerStateRegistry(config.getMonitoredServers(), config.getPingsToReady(), logger);
+        ServerStateRegistry stateRegistry = new ServerStateRegistry(config.servers(), config.recovery().pingsToReady(), logger);
 
         ServerDownHandler downHandler = new ServerDownHandler(this, proxy, logger, config, pendingRegistry);
         ServerUpHandler upHandler = new ServerUpHandler(this, proxy, logger, config, stateRegistry, pendingRegistry);
@@ -100,12 +99,12 @@ public class VelocityFailover {
 
         RecoveryMonitor monitor = new RecoveryMonitor(proxy, config, stateRegistry);
         recoveryTask = proxy.getScheduler().buildTask(this, monitor)
-                .repeat(config.getPingIntervalMs(), TimeUnit.MILLISECONDS)
+                .repeat(config.recovery().pingInterval())
                 .schedule();
 
         WaitingActionBarTask actionBar = new WaitingActionBarTask(proxy, config, pendingRegistry);
         actionBarTask = proxy.getScheduler().buildTask(this, actionBar)
-                .repeat(config.getActionBarIntervalMs(), TimeUnit.MILLISECONDS)
+                .repeat(config.actionBar().interval())
                 .schedule();
     }
 

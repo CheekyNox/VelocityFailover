@@ -32,7 +32,7 @@ public class DisconnectListener {
         String connectedServer = event.getServer().getServerInfo().getName();
         String pendingServer = pendingRegistry.getPendingServer(playerId);
 
-        if (!connectedServer.equals(config.getLimboServer()) && !connectedServer.equals(pendingServer)) {
+        if (!connectedServer.equals(config.limbo()) && !connectedServer.equals(pendingServer)) {
             pendingRegistry.remove(playerId);
         }
     }

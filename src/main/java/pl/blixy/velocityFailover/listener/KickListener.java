@@ -5,7 +5,6 @@ import com.velocitypowered.api.event.player.KickedFromServerEvent;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import pl.blixy.velocityFailover.config.FailoverConfig;
 import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
@@ -37,12 +36,11 @@ public class KickListener {
 
         stateRegistry.markOffline(serverName);
 
-        Optional<RegisteredServer> limboOpt = proxy.getServer(config.getLimboServer());
+        Optional<RegisteredServer> limboOpt = proxy.getServer(config.limbo());
         if (limboOpt.isEmpty()) return;
 
         pendingRegistry.register(event.getPlayer().getUniqueId(), serverName);
-        Component message = MiniMessage.miniMessage().deserialize(config.getSentToLimboMessage());
-        event.setResult(KickedFromServerEvent.RedirectPlayer.create(limboOpt.get(), message));
+        event.setResult(KickedFromServerEvent.RedirectPlayer.create(limboOpt.get(), config.messages().sentToLimbo()));
     }
 
     private boolean isShutdownKick(KickedFromServerEvent event) {
@@ -52,7 +50,7 @@ public class KickListener {
         }
 
         String plainReason = PlainTextComponentSerializer.plainText().serialize(reasonOpt.get());
-        for (String keyword : config.getShutdownKeywords()) {
+        for (String keyword : config.shutdownKeywords()) {
             if (plainReason.contains(keyword)) {
                 return true;
             }

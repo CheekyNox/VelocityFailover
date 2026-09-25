@@ -2,7 +2,6 @@ package pl.blixy.velocityFailover.listener;
 
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.player.ServerPreConnectEvent;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import pl.blixy.velocityFailover.config.FailoverConfig;
 import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
 import pl.blixy.velocityFailover.server.ServerStateRegistry;
@@ -34,6 +33,6 @@ public class ConnectionListener {
 
         event.setResult(ServerPreConnectEvent.ServerResult.denied());
 
-        event.getPlayer().sendMessage(MiniMessage.miniMessage().deserialize(config.getConnectionBlockedMessage()));
+        event.getPlayer().sendMessage(config.messages().connectionBlocked());
     }
 }

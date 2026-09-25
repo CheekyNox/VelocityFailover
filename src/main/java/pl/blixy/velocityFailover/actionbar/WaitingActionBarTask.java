@@ -3,7 +3,6 @@ package pl.blixy.velocityFailover.actionbar;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import pl.blixy.velocityFailover.config.FailoverConfig;
 import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
 
@@ -26,15 +25,12 @@ public class WaitingActionBarTask implements Runnable {
 
     @Override
     public void run() {
-        List<String> frames = config.getSpinnerFrames();
+        List<Component> frames = config.actionBar().frames();
         if (frames.isEmpty()) return;
 
-        String frame = frames.get(frameIndex % frames.size());
+        Component message = frames.get(frameIndex % frames.size());
         frameIndex = (frameIndex + 1) % frames.size();
-
-        String rendered = config.getWaitingActionBarMessage().replace("{spinner}", frame);
-        Component message = MiniMessage.miniMessage().deserialize(rendered);
-        String limboName = config.getLimboServer();
+        String limboName = config.limbo();
 
         for (UUID uuid : pendingRegistry.snapshotPlayers()) {
             Optional<Player> playerOpt = proxy.getPlayer(uuid);

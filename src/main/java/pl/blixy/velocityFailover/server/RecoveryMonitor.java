@@ -18,7 +18,7 @@ public class RecoveryMonitor implements Runnable {
     public RecoveryMonitor(ProxyServer proxy, FailoverConfig config, ServerStateRegistry stateRegistry) {
         this.proxy = proxy;
         this.stateRegistry = stateRegistry;
-        this.pingTimeoutMs = config.getPingTimeoutMs();
+        this.pingTimeoutMs = config.recovery().pingTimeout().toMillis();
     }
 
     @Override
