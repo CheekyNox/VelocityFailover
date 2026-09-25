@@ -26,8 +26,8 @@ All of this happens seamlessly — players see a short message, wait on limbo, a
 
 ## Requirements
 
-- Velocity 3.4.0+
-- Java 21+
+- Velocity 4.x
+- Java 25+
 - A limbo server registered in `velocity.toml` (e.g. [PicoLimbo](https://github.com/Quozul/PicoLimbo) or an empty Paper server)
 
 ## Installation
@@ -111,7 +111,7 @@ action-bar:
 ```
 Player on spawn2 ──> spawn2 crashes
                           │
-          KickListener catches the crash kick
+          FailoverListener catches the crash kick
                           │
           Player redirected to limbo instantly
                           │
