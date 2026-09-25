@@ -64,7 +64,7 @@ final class TransferTask implements Consumer<ScheduledTask> {
             return;
         }
 
-        player.sendMessage(config.messages().reconnecting());
+        config.messages().reconnecting().send(player);
         player.createConnectionRequest(server).connect().whenComplete((_, error) -> {
             waiting.remove(uuid);
             if (error != null) {

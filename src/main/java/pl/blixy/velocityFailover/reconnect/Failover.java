@@ -63,7 +63,7 @@ public final class Failover {
                 continue;
             }
 
-            player.sendMessage(config.messages().sentToLimbo());
+            player.sendMessage(config.messages().sentToLimbo().chat());
             player.createConnectionRequest(limbo).connect().whenComplete((_, error) -> {
                 if (error != null) {
                     logger.warn("[Failover] Failed to move player {} to limbo: {}", player.getUsername(), error.getMessage());

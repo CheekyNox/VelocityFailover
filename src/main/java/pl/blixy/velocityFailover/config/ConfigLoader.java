@@ -2,6 +2,7 @@ package pl.blixy.velocityFailover.config;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.title.Title;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
@@ -12,6 +13,7 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /** Copies the bundled config.yml on first start and reads it into a {@link FailoverConfig}; a missing key keeps its default. */
@@ -43,11 +45,16 @@ public final class ConfigLoader {
 
         Section recovery = root.section("recovery");
         Section messages = root.section("messages");
+        Section titles = root.section("titles");
         Section actionBar = root.section("action-bar");
         String waiting = messages.string("waiting-action-bar", "<yellow>Connecting to the server <gray>{spinner}");
         List<Component> frames = actionBar.strings("spinner-frames", List.of("[|]", "[/]", "[-]", "[\\]")).stream()
                 .map(frame -> MiniMessage.miniMessage().deserialize(waiting.replace("{spinner}", frame)))
                 .toList();
+        Title.Times titleTimes = Title.Times.times(
+                titles.millis("fade-in-ms", 300),
+                titles.millis("stay-ms", 2500),
+                titles.millis("fade-out-ms", 500));
 
         return new FailoverConfig(
                 root.string("limbo-server", "limbo"),
@@ -60,10 +67,24 @@ public final class ConfigLoader {
                         recovery.millis("ping-timeout-ms", 2000)),
                 root.strings("shutdown-keywords", List.of("Server closed", "Server shutting down")),
                 new FailoverConfig.Messages(
-                        messages.component("sent-to-limbo", "<red>The server is temporarily unavailable. You will be moved back automatically when it returns."),
-                        messages.component("reconnecting", "<green>The server is back online! Reconnecting..."),
-                        messages.component("connection-blocked", "<red>This server is currently unavailable. Please try again in a moment.")),
+                        notification(messages, titles, "sent-to-limbo", "<red>The server is temporarily unavailable. You will be moved back automatically when it returns.", titleTimes),
+                        notification(messages, titles, "reconnecting", "<green>The server is back online! Reconnecting...", titleTimes),
+                        notification(messages, titles, "connection-blocked", "<red>This server is currently unavailable. Please try again in a moment.", titleTimes)),
                 new FailoverConfig.ActionBar(actionBar.millis("interval-ms", 400), frames));
+    }
+
+    private static FailoverConfig.Notification notification(Section messages, Section titles, String key,
+                                                            String fallback, Title.Times times) {
+        Section configuredTitle = titles.section(key);
+        String heading = configuredTitle.string("title", "");
+        String subtitle = configuredTitle.string("subtitle", "");
+        Optional<Title> title = heading.isBlank() && subtitle.isBlank()
+                ? Optional.empty()
+                : Optional.of(Title.title(
+                        MiniMessage.miniMessage().deserialize(heading),
+                        MiniMessage.miniMessage().deserialize(subtitle),
+                        times));
+        return new FailoverConfig.Notification(messages.component(key, fallback), title);
     }
 
     /** One mapping of the YAML tree; anything that is not a mapping reads as empty. */

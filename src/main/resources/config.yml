@@ -42,6 +42,22 @@ messages:
   # Action bar shown to players waiting on the limbo server. {spinner} is replaced with the current frame.
   waiting-action-bar: "<yellow>Connecting to the server <gray>{spinner}"
 
+# Optional titles shown together with the matching chat messages.
+# Leave both title and subtitle empty (or remove an event) to disable its title.
+titles:
+  fade-in-ms: 300
+  stay-ms: 2500
+  fade-out-ms: 500
+  sent-to-limbo:
+    title: "<red><bold>Server unavailable</bold>"
+    subtitle: "<gray>You will be moved back automatically"
+  reconnecting:
+    title: "<green><bold>Server is back online!</bold>"
+    subtitle: "<gray>Reconnecting..."
+  connection-blocked:
+    title: "<red><bold>Server unavailable</bold>"
+    subtitle: "<gray>Please try again in a moment"
+
 # Action bar animation for players waiting on limbo
 action-bar:
   # Frame update interval (ms)

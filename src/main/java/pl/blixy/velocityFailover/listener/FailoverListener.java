@@ -55,7 +55,7 @@ public final class FailoverListener {
         }
 
         waiting.add(event.getPlayer().getUniqueId(), server);
-        event.setResult(KickedFromServerEvent.RedirectPlayer.create(limbo, config.messages().sentToLimbo()));
+        event.setResult(KickedFromServerEvent.RedirectPlayer.create(limbo, config.messages().sentToLimbo().chat()));
     }
 
     @Subscribe(priority = EARLY)
@@ -71,7 +71,7 @@ public final class FailoverListener {
         }
 
         event.setResult(ServerPreConnectEvent.ServerResult.denied());
-        event.getPlayer().sendMessage(config.messages().connectionBlocked());
+        config.messages().connectionBlocked().send(event.getPlayer());
     }
 
     @Subscribe
@@ -85,6 +85,7 @@ public final class FailoverListener {
         UUID player = event.getPlayer().getUniqueId();
         String server = event.getServer().getServerInfo().getName();
         if (server.equals(config.limbo())) {
+            waiting.serverOf(player).ifPresent(_ -> config.messages().sentToLimbo().showTitle(event.getPlayer()));
             return;
         }
 
