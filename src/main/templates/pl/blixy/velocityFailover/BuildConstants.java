@@ -1,7 +1,9 @@
 package pl.blixy.velocityFailover;
 
-// The constants are replaced before compilation
-public class BuildConstants {
+// Filled in by the generateTemplates task; @Plugin only accepts constants.
+public final class BuildConstants {
 
     public static final String VERSION = "${version}";
+
+    private BuildConstants() {}
 }
