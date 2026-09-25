@@ -5,41 +5,37 @@ import com.velocitypowered.api.proxy.server.RegisteredServer;
 import pl.blixy.velocityFailover.config.FailoverConfig;
 import pl.blixy.velocityFailover.reconnect.Failover;
 
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-public class RecoveryMonitor implements Runnable {
+/** Pings only the servers that are down; the run of answers that puts one into recovery starts the transfer. */
+public final class RecoveryMonitor implements Runnable {
 
     private final ProxyServer proxy;
-    private final ServerStates stateRegistry;
+    private final FailoverConfig config;
+    private final ServerStates states;
     private final Failover failover;
-    private final long pingTimeoutMs;
 
-    public RecoveryMonitor(ProxyServer proxy, FailoverConfig config, ServerStates stateRegistry, Failover failover) {
+    public RecoveryMonitor(ProxyServer proxy, FailoverConfig config, ServerStates states, Failover failover) {
         this.proxy = proxy;
-        this.stateRegistry = stateRegistry;
+        this.config = config;
+        this.states = states;
         this.failover = failover;
-        this.pingTimeoutMs = config.recovery().pingTimeout().toMillis();
     }
 
     @Override
     public void run() {
-        Set<String> offline = stateRegistry.offline();
-        if (offline.isEmpty()) return;
-
-        for (String serverName : offline) {
-            Optional<RegisteredServer> serverOpt = proxy.getServer(serverName);
-            if (serverOpt.isEmpty()) {
-                stateRegistry.recordPing(serverName, false);
+        for (String name : states.offline()) {
+            RegisteredServer server = proxy.getServer(name).orElse(null);
+            if (server == null) {
+                states.recordPing(name, false);
                 continue;
             }
 
-            serverOpt.get().ping()
-                    .orTimeout(pingTimeoutMs, TimeUnit.MILLISECONDS)
+            server.ping()
+                    .orTimeout(config.recovery().pingTimeout().toMillis(), TimeUnit.MILLISECONDS)
                     .whenComplete((_, error) -> {
-                        if (stateRegistry.recordPing(serverName, error == null)) {
-                            failover.serverRecovering(serverName);
+                        if (states.recordPing(name, error == null)) {
+                            failover.serverRecovering(name);
                         }
                     });
         }
