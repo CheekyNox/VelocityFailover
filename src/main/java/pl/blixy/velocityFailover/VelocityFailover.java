@@ -19,7 +19,7 @@ import pl.blixy.velocityFailover.handler.ServerUpHandler;
 import pl.blixy.velocityFailover.listener.ConnectionListener;
 import pl.blixy.velocityFailover.listener.DisconnectListener;
 import pl.blixy.velocityFailover.listener.KickListener;
-import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
+import pl.blixy.velocityFailover.reconnect.WaitingPlayers;
 import pl.blixy.velocityFailover.server.RecoveryMonitor;
 import pl.blixy.velocityFailover.server.ServerStates;
 
@@ -84,7 +84,7 @@ public class VelocityFailover {
 
         logger.info("[Failover] Monitoring {} servers, limbo: {}", config.servers().size(), config.limbo());
 
-        PendingReconnectRegistry pendingRegistry = new PendingReconnectRegistry();
+        WaitingPlayers pendingRegistry = new WaitingPlayers();
         ServerStates stateRegistry = new ServerStates(config.servers(), config.recovery().pingsToReady(), logger);
 
         ServerDownHandler downHandler = new ServerDownHandler(this, proxy, logger, config, pendingRegistry);

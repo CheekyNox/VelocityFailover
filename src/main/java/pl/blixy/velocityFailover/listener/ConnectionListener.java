@@ -3,16 +3,16 @@ package pl.blixy.velocityFailover.listener;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.player.ServerPreConnectEvent;
 import pl.blixy.velocityFailover.config.FailoverConfig;
-import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
+import pl.blixy.velocityFailover.reconnect.WaitingPlayers;
 import pl.blixy.velocityFailover.server.ServerStates;
 
 public class ConnectionListener {
 
     private final FailoverConfig config;
     private final ServerStates stateRegistry;
-    private final PendingReconnectRegistry pendingRegistry;
+    private final WaitingPlayers pendingRegistry;
 
-    public ConnectionListener(FailoverConfig config, ServerStates stateRegistry, PendingReconnectRegistry pendingRegistry) {
+    public ConnectionListener(FailoverConfig config, ServerStates stateRegistry, WaitingPlayers pendingRegistry) {
         this.config = config;
         this.stateRegistry = stateRegistry;
         this.pendingRegistry = pendingRegistry;
@@ -28,8 +28,7 @@ public class ConnectionListener {
 
         if (stateRegistry.isAvailable(serverName)) return;
 
-        String pendingServer = pendingRegistry.getPendingServer(event.getPlayer().getUniqueId());
-        if (serverName.equals(pendingServer)) return;
+        if (pendingRegistry.serverOf(event.getPlayer().getUniqueId()).filter(serverName::equals).isPresent()) return;
 
         event.setResult(ServerPreConnectEvent.ServerResult.denied());
 

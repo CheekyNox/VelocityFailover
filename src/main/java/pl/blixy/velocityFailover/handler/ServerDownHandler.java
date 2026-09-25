@@ -5,7 +5,7 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import org.slf4j.Logger;
 import pl.blixy.velocityFailover.config.FailoverConfig;
-import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
+import pl.blixy.velocityFailover.reconnect.WaitingPlayers;
 
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -18,9 +18,9 @@ public class ServerDownHandler {
     private final ProxyServer proxy;
     private final Logger logger;
     private final FailoverConfig config;
-    private final PendingReconnectRegistry pendingRegistry;
+    private final WaitingPlayers pendingRegistry;
 
-    public ServerDownHandler(Object plugin, ProxyServer proxy, Logger logger, FailoverConfig config, PendingReconnectRegistry pendingRegistry) {
+    public ServerDownHandler(Object plugin, ProxyServer proxy, Logger logger, FailoverConfig config, WaitingPlayers pendingRegistry) {
         this.plugin = plugin;
         this.proxy = proxy;
         this.logger = logger;
@@ -48,7 +48,7 @@ public class ServerDownHandler {
         RegisteredServer server = serverOpt.get();
 
         for (Player player : server.getPlayersConnected()) {
-            if (!pendingRegistry.register(player.getUniqueId(), serverName)) {
+            if (!pendingRegistry.add(player.getUniqueId(), serverName)) {
                 continue;
             }
 

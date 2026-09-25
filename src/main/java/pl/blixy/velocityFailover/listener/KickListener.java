@@ -7,7 +7,7 @@ import com.velocitypowered.api.proxy.server.RegisteredServer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import pl.blixy.velocityFailover.config.FailoverConfig;
-import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
+import pl.blixy.velocityFailover.reconnect.WaitingPlayers;
 import pl.blixy.velocityFailover.handler.ServerDownHandler;
 import pl.blixy.velocityFailover.server.ServerStates;
 
@@ -18,10 +18,10 @@ public class KickListener {
     private final ProxyServer proxy;
     private final FailoverConfig config;
     private final ServerStates stateRegistry;
-    private final PendingReconnectRegistry pendingRegistry;
+    private final WaitingPlayers pendingRegistry;
     private final ServerDownHandler downHandler;
 
-    public KickListener(ProxyServer proxy, FailoverConfig config, ServerStates stateRegistry, PendingReconnectRegistry pendingRegistry, ServerDownHandler downHandler) {
+    public KickListener(ProxyServer proxy, FailoverConfig config, ServerStates stateRegistry, WaitingPlayers pendingRegistry, ServerDownHandler downHandler) {
         this.proxy = proxy;
         this.config = config;
         this.stateRegistry = stateRegistry;
@@ -44,7 +44,7 @@ public class KickListener {
         Optional<RegisteredServer> limboOpt = proxy.getServer(config.limbo());
         if (limboOpt.isEmpty()) return;
 
-        pendingRegistry.register(event.getPlayer().getUniqueId(), serverName);
+        pendingRegistry.add(event.getPlayer().getUniqueId(), serverName);
         event.setResult(KickedFromServerEvent.RedirectPlayer.create(limboOpt.get(), config.messages().sentToLimbo()));
     }
 

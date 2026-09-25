@@ -4,7 +4,7 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import net.kyori.adventure.text.Component;
 import pl.blixy.velocityFailover.config.FailoverConfig;
-import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
+import pl.blixy.velocityFailover.reconnect.WaitingPlayers;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,10 +14,10 @@ public class WaitingActionBarTask implements Runnable {
 
     private final ProxyServer proxy;
     private final FailoverConfig config;
-    private final PendingReconnectRegistry pendingRegistry;
+    private final WaitingPlayers pendingRegistry;
     private int frameIndex = 0;
 
-    public WaitingActionBarTask(ProxyServer proxy, FailoverConfig config, PendingReconnectRegistry pendingRegistry) {
+    public WaitingActionBarTask(ProxyServer proxy, FailoverConfig config, WaitingPlayers pendingRegistry) {
         this.proxy = proxy;
         this.config = config;
         this.pendingRegistry = pendingRegistry;
@@ -32,7 +32,7 @@ public class WaitingActionBarTask implements Runnable {
         frameIndex = (frameIndex + 1) % frames.size();
         String limboName = config.limbo();
 
-        for (UUID uuid : pendingRegistry.snapshotPlayers()) {
+        for (UUID uuid : pendingRegistry.all()) {
             Optional<Player> playerOpt = proxy.getPlayer(uuid);
             if (playerOpt.isEmpty()) continue;
 

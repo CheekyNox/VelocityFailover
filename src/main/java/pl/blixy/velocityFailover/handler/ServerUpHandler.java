@@ -6,7 +6,7 @@ import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.scheduler.ScheduledTask;
 import org.slf4j.Logger;
 import pl.blixy.velocityFailover.config.FailoverConfig;
-import pl.blixy.velocityFailover.reconnect.PendingReconnectRegistry;
+import pl.blixy.velocityFailover.reconnect.WaitingPlayers;
 import pl.blixy.velocityFailover.server.ServerState;
 import pl.blixy.velocityFailover.server.ServerStates;
 
@@ -22,9 +22,9 @@ public class ServerUpHandler {
     private final Logger logger;
     private final FailoverConfig config;
     private final ServerStates stateRegistry;
-    private final PendingReconnectRegistry pendingRegistry;
+    private final WaitingPlayers pendingRegistry;
 
-    public ServerUpHandler(Object plugin, ProxyServer proxy, Logger logger, FailoverConfig config, ServerStates stateRegistry, PendingReconnectRegistry pendingRegistry) {
+    public ServerUpHandler(Object plugin, ProxyServer proxy, Logger logger, FailoverConfig config, ServerStates stateRegistry, WaitingPlayers pendingRegistry) {
         this.plugin = plugin;
         this.proxy = proxy;
         this.logger = logger;
@@ -52,7 +52,7 @@ public class ServerUpHandler {
         }
 
         RegisteredServer server = serverOpt.get();
-        List<UUID> players = pendingRegistry.getPlayersForServer(serverName);
+        List<UUID> players = pendingRegistry.waitingFor(serverName);
 
         if (players.isEmpty()) {
             logger.info("[Failover] No players to transfer back to {}", serverName);
