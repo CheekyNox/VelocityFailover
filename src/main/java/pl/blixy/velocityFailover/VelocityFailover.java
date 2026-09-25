@@ -14,11 +14,10 @@ import pl.blixy.velocityFailover.actionbar.WaitingActionBarTask;
 import pl.blixy.velocityFailover.command.ReloadCommand;
 import pl.blixy.velocityFailover.config.ConfigLoader;
 import pl.blixy.velocityFailover.config.FailoverConfig;
-import pl.blixy.velocityFailover.handler.ServerDownHandler;
-import pl.blixy.velocityFailover.handler.ServerUpHandler;
 import pl.blixy.velocityFailover.listener.ConnectionListener;
 import pl.blixy.velocityFailover.listener.DisconnectListener;
 import pl.blixy.velocityFailover.listener.KickListener;
+import pl.blixy.velocityFailover.reconnect.Failover;
 import pl.blixy.velocityFailover.reconnect.WaitingPlayers;
 import pl.blixy.velocityFailover.server.RecoveryMonitor;
 import pl.blixy.velocityFailover.server.ServerStates;
@@ -87,14 +86,13 @@ public class VelocityFailover {
         WaitingPlayers pendingRegistry = new WaitingPlayers();
         ServerStates stateRegistry = new ServerStates(config.servers(), config.recovery().pingsToReady(), logger);
 
-        ServerDownHandler downHandler = new ServerDownHandler(this, proxy, logger, config, pendingRegistry);
-        ServerUpHandler upHandler = new ServerUpHandler(this, proxy, logger, config, stateRegistry, pendingRegistry);
+        Failover failover = new Failover(this, proxy, logger, config, stateRegistry, pendingRegistry);
 
-        proxy.getEventManager().register(this, new KickListener(proxy, config, stateRegistry, pendingRegistry, downHandler));
+        proxy.getEventManager().register(this, new KickListener(proxy, config, stateRegistry, pendingRegistry, failover));
         proxy.getEventManager().register(this, new ConnectionListener(config, stateRegistry, pendingRegistry));
         proxy.getEventManager().register(this, new DisconnectListener(config, pendingRegistry));
 
-        RecoveryMonitor monitor = new RecoveryMonitor(proxy, config, stateRegistry, upHandler);
+        RecoveryMonitor monitor = new RecoveryMonitor(proxy, config, stateRegistry, failover);
         recoveryTask = proxy.getScheduler().buildTask(this, monitor)
                 .repeat(config.recovery().pingInterval())
                 .schedule();

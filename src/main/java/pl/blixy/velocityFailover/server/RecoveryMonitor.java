@@ -3,7 +3,7 @@ package pl.blixy.velocityFailover.server;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import pl.blixy.velocityFailover.config.FailoverConfig;
-import pl.blixy.velocityFailover.handler.ServerUpHandler;
+import pl.blixy.velocityFailover.reconnect.Failover;
 
 import java.util.Optional;
 import java.util.Set;
@@ -13,13 +13,13 @@ public class RecoveryMonitor implements Runnable {
 
     private final ProxyServer proxy;
     private final ServerStates stateRegistry;
-    private final ServerUpHandler upHandler;
+    private final Failover failover;
     private final long pingTimeoutMs;
 
-    public RecoveryMonitor(ProxyServer proxy, FailoverConfig config, ServerStates stateRegistry, ServerUpHandler upHandler) {
+    public RecoveryMonitor(ProxyServer proxy, FailoverConfig config, ServerStates stateRegistry, Failover failover) {
         this.proxy = proxy;
         this.stateRegistry = stateRegistry;
-        this.upHandler = upHandler;
+        this.failover = failover;
         this.pingTimeoutMs = config.recovery().pingTimeout().toMillis();
     }
 
@@ -39,7 +39,7 @@ public class RecoveryMonitor implements Runnable {
                     .orTimeout(pingTimeoutMs, TimeUnit.MILLISECONDS)
                     .whenComplete((_, error) -> {
                         if (stateRegistry.recordPing(serverName, error == null)) {
-                            upHandler.handle(serverName);
+                            failover.serverRecovering(serverName);
                         }
                     });
         }

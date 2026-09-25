@@ -1,5 +1,6 @@
 package pl.blixy.velocityFailover.config;
 
+import com.velocitypowered.api.proxy.Player;
 import net.kyori.adventure.text.Component;
 
 import java.time.Duration;
@@ -17,4 +18,9 @@ public record FailoverConfig(String limbo, Set<String> servers, Recovery recover
 
     /** One rendered action bar per spinner frame, cycled every {@code interval}. */
     public record ActionBar(Duration interval, List<Component> frames) {}
+
+    /** Whether the player is parked on the limbo server right now. */
+    public boolean isLimbo(Player player) {
+        return player.getCurrentServer().map(connection -> connection.getServerInfo().getName().equals(limbo)).orElse(false);
+    }
 }
