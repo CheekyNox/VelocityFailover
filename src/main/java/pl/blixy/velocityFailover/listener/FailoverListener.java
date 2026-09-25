@@ -4,6 +4,7 @@ import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.player.KickedFromServerEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
+import com.velocitypowered.api.event.player.ServerPostConnectEvent;
 import com.velocitypowered.api.event.player.ServerPreConnectEvent;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
@@ -85,11 +86,19 @@ public final class FailoverListener {
         UUID player = event.getPlayer().getUniqueId();
         String server = event.getServer().getServerInfo().getName();
         if (server.equals(config.limbo())) {
-            waiting.serverOf(player).ifPresent(_ -> config.messages().sentToLimbo().showTitle(event.getPlayer()));
             return;
         }
 
         waiting.serverOf(player).filter(expected -> !expected.equals(server)).ifPresent(_ -> waiting.remove(player));
+    }
+
+    /** Titles must be sent after JoinGame; sending one from ServerConnectedEvent lets that packet clear it. */
+    @Subscribe
+    public void onServerPostConnect(ServerPostConnectEvent event) {
+        UUID player = event.getPlayer().getUniqueId();
+        if (config.isLimbo(event.getPlayer()) && waiting.serverOf(player).isPresent()) {
+            config.messages().sentToLimbo().showTitle(event.getPlayer());
+        }
     }
 
     private boolean isShutdown(KickedFromServerEvent event) {
