@@ -37,6 +37,7 @@ public final class VelocityFailover {
     private final Logger logger;
     private final Path dataDirectory;
     private final List<ScheduledTask> tasks = new ArrayList<>();
+    private FailoverListener listener;
 
     @Inject
     public VelocityFailover(ProxyServer proxy, Logger logger, @DataDirectory Path dataDirectory) {
@@ -82,7 +83,8 @@ public final class VelocityFailover {
         ServerStates states = new ServerStates(config.servers(), config.recovery().pingsToReady(), logger);
         Failover failover = new Failover(this, proxy, logger, config, states, waiting);
 
-        proxy.getEventManager().register(this, new FailoverListener(proxy, config, states, waiting, failover));
+        listener = new FailoverListener(proxy, config, states, waiting, failover);
+        proxy.getEventManager().register(this, listener);
         tasks.add(proxy.getScheduler().buildTask(this, new RecoveryMonitor(proxy, config, states, failover))
                 .repeat(config.recovery().pingInterval())
                 .schedule());
@@ -94,6 +96,10 @@ public final class VelocityFailover {
     private void stop() {
         tasks.forEach(ScheduledTask::cancel);
         tasks.clear();
-        proxy.getEventManager().unregisterListeners(this);
+        // Only the failover listener: unregistering everything of the plugin would drop the shutdown handler too.
+        if (listener != null) {
+            proxy.getEventManager().unregisterListener(this, listener);
+            listener = null;
+        }
     }
 }
