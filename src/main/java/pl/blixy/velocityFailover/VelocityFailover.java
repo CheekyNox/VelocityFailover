@@ -14,9 +14,7 @@ import pl.blixy.velocityFailover.actionbar.WaitingActionBarTask;
 import pl.blixy.velocityFailover.command.ReloadCommand;
 import pl.blixy.velocityFailover.config.ConfigLoader;
 import pl.blixy.velocityFailover.config.FailoverConfig;
-import pl.blixy.velocityFailover.listener.ConnectionListener;
-import pl.blixy.velocityFailover.listener.DisconnectListener;
-import pl.blixy.velocityFailover.listener.KickListener;
+import pl.blixy.velocityFailover.listener.FailoverListener;
 import pl.blixy.velocityFailover.reconnect.Failover;
 import pl.blixy.velocityFailover.reconnect.WaitingPlayers;
 import pl.blixy.velocityFailover.server.RecoveryMonitor;
@@ -88,9 +86,7 @@ public class VelocityFailover {
 
         Failover failover = new Failover(this, proxy, logger, config, stateRegistry, pendingRegistry);
 
-        proxy.getEventManager().register(this, new KickListener(proxy, config, stateRegistry, pendingRegistry, failover));
-        proxy.getEventManager().register(this, new ConnectionListener(config, stateRegistry, pendingRegistry));
-        proxy.getEventManager().register(this, new DisconnectListener(config, pendingRegistry));
+        proxy.getEventManager().register(this, new FailoverListener(proxy, config, stateRegistry, pendingRegistry, failover));
 
         RecoveryMonitor monitor = new RecoveryMonitor(proxy, config, stateRegistry, failover);
         recoveryTask = proxy.getScheduler().buildTask(this, monitor)
