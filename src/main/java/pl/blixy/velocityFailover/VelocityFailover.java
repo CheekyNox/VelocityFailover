@@ -10,12 +10,12 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.scheduler.ScheduledTask;
 import org.slf4j.Logger;
-import pl.blixy.velocityFailover.actionbar.WaitingActionBarTask;
 import pl.blixy.velocityFailover.command.ReloadCommand;
 import pl.blixy.velocityFailover.config.ConfigLoader;
 import pl.blixy.velocityFailover.config.FailoverConfig;
 import pl.blixy.velocityFailover.listener.FailoverListener;
 import pl.blixy.velocityFailover.reconnect.Failover;
+import pl.blixy.velocityFailover.reconnect.WaitingActionBar;
 import pl.blixy.velocityFailover.reconnect.WaitingPlayers;
 import pl.blixy.velocityFailover.server.RecoveryMonitor;
 import pl.blixy.velocityFailover.server.ServerStates;
@@ -93,7 +93,7 @@ public class VelocityFailover {
                 .repeat(config.recovery().pingInterval())
                 .schedule();
 
-        WaitingActionBarTask actionBar = new WaitingActionBarTask(proxy, config, pendingRegistry);
+        WaitingActionBar actionBar = new WaitingActionBar(proxy, config, pendingRegistry);
         actionBarTask = proxy.getScheduler().buildTask(this, actionBar)
                 .repeat(config.actionBar().interval())
                 .schedule();
