@@ -56,11 +56,13 @@ messages:
   sent-to-limbo: "<red>The server is temporarily unavailable. You will be moved back automatically when it returns."
   reconnecting: "<green>The server is back online! Reconnecting..."
   connection-blocked: "<red>This server is currently unavailable. Please try again in a moment."
+  # Set to "" if the limbo server already provides an action bar.
   waiting-action-bar: "<yellow>Connecting to the server <gray>{spinner}"
 
 # Persistent title animations. Each list entry is one animation frame.
 titles:
   interval-ms: 1000
+  connecting-delay-ms: 2000
   animation-stay-ms: 30000
   waiting:
     - { title: "<red><bold>Server unavailable.</bold>", subtitle: "<gray>Please wait..." }
@@ -84,7 +86,9 @@ action-bar:
 
 Server names must match `velocity.toml` exactly. Do not list the limbo server itself.
 
-Titles use MiniMessage too. Existing configs without a `titles` section automatically use the defaults above. Set `waiting: []` or `connecting: []` to disable either animation. The earlier single `sent-to-limbo` and `reconnecting` title format remains accepted as a one-frame animation.
+Titles use MiniMessage too. Existing configs without a `titles` section automatically use the defaults above. `connecting-delay-ms` guarantees time for the connecting animation even if `grace-period-ms` is shorter. Set `waiting: []` or `connecting: []` to disable either animation. The earlier single `sent-to-limbo` and `reconnecting` title format remains accepted as a one-frame animation.
+
+Only one plugin should own the action bar. If PicoLimbo or another limbo plugin already displays one, set `messages.waiting-action-bar: ""`; VelocityFailover will then stop sending action-bar packets entirely.
 
 ## Good to know
 

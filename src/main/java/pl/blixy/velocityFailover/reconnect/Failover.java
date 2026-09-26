@@ -44,7 +44,10 @@ public final class Failover {
 
     /** The grace period lets the server load its plugins before the first player arrives. */
     public void serverRecovering(String server) {
-        proxy.getScheduler().buildTask(plugin, () -> startTransfer(server)).delay(config.recovery().gracePeriod()).schedule();
+        Duration gracePeriod = config.recovery().gracePeriod();
+        Duration connectingDelay = config.titleAnimation().connectingDelay();
+        Duration delay = gracePeriod.compareTo(connectingDelay) >= 0 ? gracePeriod : connectingDelay;
+        proxy.getScheduler().buildTask(plugin, () -> startTransfer(server)).delay(delay).schedule();
     }
 
     private void sweep(String name) {

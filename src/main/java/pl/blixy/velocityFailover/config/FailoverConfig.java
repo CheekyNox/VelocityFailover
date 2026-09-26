@@ -35,7 +35,8 @@ public record FailoverConfig(String limbo, Set<String> servers, Recovery recover
     public record ActionBar(Duration interval, List<Component> frames) {}
 
     /** Persistent title frames shown while the player waits and while their server is recovering. */
-    public record TitleAnimation(Duration interval, List<Title> waitingFrames, List<Title> connectingFrames) {}
+    public record TitleAnimation(Duration interval, Duration connectingDelay,
+                                 List<Title> waitingFrames, List<Title> connectingFrames) {}
 
     /** Whether the player is parked on the limbo server right now. */
     public boolean isLimbo(Player player) {

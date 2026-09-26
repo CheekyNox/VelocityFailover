@@ -41,8 +41,10 @@ class ConfigLoaderTest {
     }
 
     @Test
-    void allowsDisablingADefaultTitle() throws IOException {
+    void allowsDisablingADefaultTitleAndActionBar() throws IOException {
         writeConfig("""
+                messages:
+                  waiting-action-bar: ""
                 titles:
                   sent-to-limbo:
                     title: ""
@@ -53,6 +55,7 @@ class ConfigLoaderTest {
 
         assertTrue(config.titleAnimation().waitingFrames().isEmpty());
         assertEquals(3, config.titleAnimation().connectingFrames().size());
+        assertTrue(config.actionBar().frames().isEmpty());
     }
 
     @Test
@@ -60,6 +63,7 @@ class ConfigLoaderTest {
         writeConfig("""
                 titles:
                   interval-ms: 750
+                  connecting-delay-ms: 2250
                   animation-stay-ms: 10000
                   fade-in-ms: 150
                   stay-ms: 1800
@@ -84,6 +88,7 @@ class ConfigLoaderTest {
         Title.Times notificationTimes = blockedTitle.times();
 
         assertEquals(Duration.ofMillis(750), config.titleAnimation().interval());
+        assertEquals(Duration.ofMillis(2250), config.titleAnimation().connectingDelay());
         assertEquals(2, config.titleAnimation().waitingFrames().size());
         assertEquals(1, config.titleAnimation().connectingFrames().size());
         assertEquals("Unavailable.", PLAIN.serialize(waitingTitle.title()));

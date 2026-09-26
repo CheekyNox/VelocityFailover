@@ -58,9 +58,11 @@ public final class ConfigLoader {
         Section titles = root.section("titles");
         Section actionBar = root.section("action-bar");
         String waiting = messages.string("waiting-action-bar", "<yellow>Connecting to the server <gray>{spinner}");
-        List<Component> frames = actionBar.strings("spinner-frames", List.of("[|]", "[/]", "[-]", "[\\]")).stream()
-                .map(frame -> MINI_MESSAGE.deserialize(waiting.replace("{spinner}", frame)))
-                .toList();
+        List<Component> frames = waiting.isBlank()
+                ? List.of()
+                : actionBar.strings("spinner-frames", List.of("[|]", "[/]", "[-]", "[\\]")).stream()
+                        .map(frame -> MINI_MESSAGE.deserialize(waiting.replace("{spinner}", frame)))
+                        .toList();
         Title.Times notificationTitleTimes = Title.Times.times(
                 titles.millis("fade-in-ms", 300),
                 titles.millis("stay-ms", 2500),
@@ -92,7 +94,10 @@ public final class ConfigLoader {
                                 "<red><bold>Server unavailable</bold>", "<gray>Please try again in a moment", notificationTitleTimes)),
                 new FailoverConfig.ActionBar(actionBar.millis("interval-ms", 400), frames),
                 new FailoverConfig.TitleAnimation(
-                        titles.millis("interval-ms", 1000), waitingTitles, connectingTitles));
+                        titles.millis("interval-ms", 1000),
+                        titles.millis("connecting-delay-ms", 2000),
+                        waitingTitles,
+                        connectingTitles));
     }
 
     private static List<Title> titleFrames(Section titles, String key, String legacyKey,

@@ -40,6 +40,7 @@ messages:
   reconnecting: "<green>The server is back online! Reconnecting..."
   connection-blocked: "<red>This server is currently unavailable. Please try again in a moment."
   # Action bar shown to players waiting on the limbo server. {spinner} is replaced with the current frame.
+  # Set this to "" if the limbo server already sends its own action bar.
   waiting-action-bar: "<yellow>Connecting to the server <gray>{spinner}"
 
 # Persistent animated titles shown while players wait on limbo.
@@ -47,6 +48,8 @@ messages:
 titles:
   # Delay between animation frames (ms). 1000 ms matches LimboReconnect's default 20 ticks.
   interval-ms: 1000
+  # Minimum time to show connecting frames before moving the first player (ms).
+  connecting-delay-ms: 2000
   # Each frame deliberately stays longer than the interval so the title never disappears between updates.
   animation-stay-ms: 30000
   waiting:
