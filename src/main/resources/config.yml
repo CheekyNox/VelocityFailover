@@ -74,6 +74,21 @@ titles:
     title: "<red><bold>Server unavailable</bold>"
     subtitle: "<gray>Please try again in a moment"
 
+# Client-side vanilla sounds. Set name to "" to disable either sound.
+sounds:
+  # Played with every waiting title frame.
+  waiting:
+    name: "minecraft:entity.experience_orb.pickup"
+    source: "master"
+    volume: 0.5
+    pitch: 1.0
+  # Played once when the target server enters recovery.
+  connecting:
+    name: "minecraft:entity.player.levelup"
+    source: "master"
+    volume: 1.0
+    pitch: 1.0
+
 # Action bar animation for players waiting on limbo
 action-bar:
   # Frame update interval (ms)

@@ -1,5 +1,6 @@
 package pl.blixy.velocityFailover.config;
 
+import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,8 @@ class ConfigLoaderTest {
         assertEquals("Server unavailable.", PLAIN.serialize(config.titleAnimation().waitingFrames().getFirst().title()));
         assertEquals("Reconnecting.", PLAIN.serialize(config.titleAnimation().connectingFrames().getFirst().title()));
         assertEquals("Server unavailable", PLAIN.serialize(config.messages().connectionBlocked().title().orElseThrow().title()));
+        assertEquals("minecraft:entity.experience_orb.pickup", config.sounds().waiting().orElseThrow().name().asString());
+        assertEquals("minecraft:entity.player.levelup", config.sounds().connecting().orElseThrow().name().asString());
     }
 
     @Test
@@ -45,6 +48,9 @@ class ConfigLoaderTest {
         writeConfig("""
                 messages:
                   waiting-action-bar: ""
+                sounds:
+                  waiting:
+                    name: ""
                 titles:
                   sent-to-limbo:
                     title: ""
@@ -56,6 +62,7 @@ class ConfigLoaderTest {
         assertTrue(config.titleAnimation().waitingFrames().isEmpty());
         assertEquals(3, config.titleAnimation().connectingFrames().size());
         assertTrue(config.actionBar().frames().isEmpty());
+        assertTrue(config.sounds().waiting().isEmpty());
     }
 
     @Test
@@ -79,6 +86,12 @@ class ConfigLoaderTest {
                   connection-blocked:
                     title: "<red>Blocked"
                     subtitle: "Try later"
+                sounds:
+                  waiting:
+                    name: "minecraft:block.note_block.pling"
+                    source: "player"
+                    volume: 0.25
+                    pitch: 1.5
                 """);
 
         FailoverConfig config = ConfigLoader.load(directory);
@@ -101,6 +114,10 @@ class ConfigLoaderTest {
         assertEquals(Duration.ofMillis(150), notificationTimes.fadeIn());
         assertEquals(Duration.ofMillis(1800), notificationTimes.stay());
         assertEquals(Duration.ofMillis(350), notificationTimes.fadeOut());
+        assertEquals("minecraft:block.note_block.pling", config.sounds().waiting().orElseThrow().name().asString());
+        assertEquals(Sound.Source.PLAYER, config.sounds().waiting().orElseThrow().source());
+        assertEquals(0.25f, config.sounds().waiting().orElseThrow().volume());
+        assertEquals(1.5f, config.sounds().waiting().orElseThrow().pitch());
     }
 
     private void writeConfig(String yaml) throws IOException {

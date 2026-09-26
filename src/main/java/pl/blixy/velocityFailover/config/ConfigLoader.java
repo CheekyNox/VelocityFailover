@@ -1,5 +1,7 @@
 package pl.blixy.velocityFailover.config;
 
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
@@ -12,6 +14,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -56,6 +59,7 @@ public final class ConfigLoader {
         Section recovery = root.section("recovery");
         Section messages = root.section("messages");
         Section titles = root.section("titles");
+        Section sounds = root.section("sounds");
         Section actionBar = root.section("action-bar");
         String waiting = messages.string("waiting-action-bar", "<yellow>Connecting to the server <gray>{spinner}");
         List<Component> frames = waiting.isBlank()
@@ -97,7 +101,28 @@ public final class ConfigLoader {
                         titles.millis("interval-ms", 1000),
                         titles.millis("connecting-delay-ms", 2000),
                         waitingTitles,
-                        connectingTitles));
+                        connectingTitles),
+                new FailoverConfig.Sounds(
+                        sound(sounds.section("waiting"), "minecraft:entity.experience_orb.pickup", 0.5f, 1.0f),
+                        sound(sounds.section("connecting"), "minecraft:entity.player.levelup", 1.0f, 1.0f)));
+    }
+
+    private static Optional<Sound> sound(Section section, String fallbackName, float fallbackVolume, float fallbackPitch) {
+        String name = section.string("name", fallbackName);
+        if (name.isBlank()) {
+            return Optional.empty();
+        }
+
+        Sound.Source source;
+        try {
+            source = Sound.Source.valueOf(section.string("source", "master").toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            source = Sound.Source.MASTER;
+        }
+        return Optional.of(Sound.sound(
+                Key.key(name), source,
+                section.decimal("volume", fallbackVolume),
+                section.decimal("pitch", fallbackPitch)));
     }
 
     private static List<Title> titleFrames(Section titles, String key, String legacyKey,
@@ -177,6 +202,10 @@ public final class ConfigLoader {
 
         int integer(String key, int fallback) {
             return values.get(key) instanceof Number value ? value.intValue() : fallback;
+        }
+
+        float decimal(String key, float fallback) {
+            return values.get(key) instanceof Number value ? value.floatValue() : fallback;
         }
 
         Duration millis(String key, long fallback) {

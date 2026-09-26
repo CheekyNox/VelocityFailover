@@ -79,6 +79,18 @@ titles:
     title: "<red><bold>Server unavailable</bold>"
     subtitle: "<gray>Please try again in a moment"
 
+sounds:
+  waiting:
+    name: "minecraft:entity.experience_orb.pickup"
+    source: "master"
+    volume: 0.5
+    pitch: 1.0
+  connecting:
+    name: "minecraft:entity.player.levelup"
+    source: "master"
+    volume: 1.0
+    pitch: 1.0
+
 action-bar:
   interval-ms: 400
   spinner-frames: ["[|]", "[/]", "[-]", "[\\]"]
@@ -89,6 +101,8 @@ Server names must match `velocity.toml` exactly. Do not list the limbo server it
 Titles use MiniMessage too. Existing configs without a `titles` section automatically use the defaults above. `connecting-delay-ms` guarantees time for the connecting animation even if `grace-period-ms` is shorter. Set `waiting: []` or `connecting: []` to disable either animation. The earlier single `sent-to-limbo` and `reconnecting` title format remains accepted as a one-frame animation.
 
 Only one plugin should own the action bar. If PicoLimbo or another limbo plugin already displays one, set `messages.waiting-action-bar: ""`; VelocityFailover will then stop sending action-bar packets entirely.
+
+The waiting sound plays with every title frame; the connecting sound plays once when recovery starts. Both use vanilla client sounds and need no resource pack. Set a sound's `name` to `""` to disable it.
 
 ## Good to know
 

@@ -1,6 +1,7 @@
 package pl.blixy.velocityFailover.reconnect;
 
 import com.velocitypowered.api.proxy.ProxyServer;
+import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.title.Title;
 import pl.blixy.velocityFailover.config.FailoverConfig;
 import pl.blixy.velocityFailover.server.ServerState;
@@ -38,6 +39,9 @@ public final class WaitingTitles implements Runnable {
                 if (!frames.isEmpty()) {
                     int frame = connecting ? connectingFrame : waitingFrame;
                     player.showTitle(frames.get(frame % frames.size()));
+                    if (!connecting) {
+                        config.sounds().waiting().ifPresent(sound -> player.playSound(sound, Sound.Emitter.self()));
+                    }
                 } else {
                     player.resetTitle();
                 }
