@@ -64,13 +64,12 @@ final class TransferTask implements Consumer<ScheduledTask> {
             return;
         }
 
-        player.sendMessage(config.messages().reconnecting().chat());
-        player.createConnectionRequest(server).connect().whenComplete((result, error) -> {
+        player.sendMessage(config.messages().reconnecting());
+        player.resetTitle();
+        player.createConnectionRequest(server).connect().whenComplete((_, error) -> {
             waiting.remove(uuid);
             if (error != null) {
                 logger.warn("[Failover] Failed to transfer {} to {}: {}", player.getUsername(), name, error.getMessage());
-            } else if (result.isSuccessful()) {
-                config.messages().reconnecting().showTitle(player);
             }
         });
     }

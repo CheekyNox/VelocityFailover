@@ -6,7 +6,7 @@ When one of your backend servers crashes or restarts, players on it are moved to
 
 1. A server goes down. Velocity kicks its players with a reason like "Server closed".
 2. The plugin sees that kick, marks the server as down and sends the player to limbo instead.
-3. While they wait, a small spinner shows in their action bar.
+3. While they wait, animated title messages and a small action-bar spinner stay visible.
 4. The plugin pings the downed server until it answers a few times in a row, then waits a moment so its plugins can load.
 5. Players are moved back one at a time, so a freshly started server is not hit all at once.
 6. Anyone trying to join the server while it is down gets a message instead.
@@ -58,18 +58,21 @@ messages:
   connection-blocked: "<red>This server is currently unavailable. Please try again in a moment."
   waiting-action-bar: "<yellow>Connecting to the server <gray>{spinner}"
 
-# Title/subtitle pairs shown together with the matching chat message.
-# These defaults also apply to existing configs without this section.
+# Persistent title animations. Each list entry is one animation frame.
 titles:
+  interval-ms: 1000
+  animation-stay-ms: 30000
+  waiting:
+    - { title: "<red><bold>Server unavailable.</bold>", subtitle: "<gray>Please wait..." }
+    - { title: "<red><bold>Server unavailable..</bold>", subtitle: "<gray>Please wait..." }
+    - { title: "<red><bold>Server unavailable...</bold>", subtitle: "<gray>Please wait..." }
+  connecting:
+    - { title: "<green><bold>Reconnecting.</bold>", subtitle: "<gray>Please wait..." }
+    - { title: "<green><bold>Reconnecting..</bold>", subtitle: "<gray>Please wait..." }
+    - { title: "<green><bold>Reconnecting...</bold>", subtitle: "<gray>Please wait..." }
   fade-in-ms: 300
   stay-ms: 2500
   fade-out-ms: 500
-  sent-to-limbo:
-    title: "<red><bold>Server unavailable</bold>"
-    subtitle: "<gray>You will be moved back automatically"
-  reconnecting:
-    title: "<green><bold>Server is back online!</bold>"
-    subtitle: "<gray>Reconnecting..."
   connection-blocked:
     title: "<red><bold>Server unavailable</bold>"
     subtitle: "<gray>Please try again in a moment"
@@ -81,7 +84,7 @@ action-bar:
 
 Server names must match `velocity.toml` exactly. Do not list the limbo server itself.
 
-Titles use MiniMessage too. Existing configs without a `titles` section automatically use the defaults above. Set both fields of an event to `""` to keep that event chat-only.
+Titles use MiniMessage too. Existing configs without a `titles` section automatically use the defaults above. Set `waiting: []` or `connecting: []` to disable either animation. The earlier single `sent-to-limbo` and `reconnecting` title format remains accepted as a one-frame animation.
 
 ## Good to know
 

@@ -19,6 +19,16 @@ import java.util.Set;
 /** Copies the bundled config.yml on first start and reads it into a {@link FailoverConfig}; a missing key keeps its default. */
 public final class ConfigLoader {
 
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+    private static final List<TitleFrame> DEFAULT_WAITING_TITLES = List.of(
+            new TitleFrame("<red><bold>Server unavailable.</bold>", "<gray>Please wait..."),
+            new TitleFrame("<red><bold>Server unavailable..</bold>", "<gray>Please wait..."),
+            new TitleFrame("<red><bold>Server unavailable...</bold>", "<gray>Please wait..."));
+    private static final List<TitleFrame> DEFAULT_CONNECTING_TITLES = List.of(
+            new TitleFrame("<green><bold>Reconnecting.</bold>", "<gray>Please wait..."),
+            new TitleFrame("<green><bold>Reconnecting..</bold>", "<gray>Please wait..."),
+            new TitleFrame("<green><bold>Reconnecting...</bold>", "<gray>Please wait..."));
+
     private ConfigLoader() {}
 
     public static FailoverConfig load(Path dataDirectory) throws IOException {
@@ -49,12 +59,20 @@ public final class ConfigLoader {
         Section actionBar = root.section("action-bar");
         String waiting = messages.string("waiting-action-bar", "<yellow>Connecting to the server <gray>{spinner}");
         List<Component> frames = actionBar.strings("spinner-frames", List.of("[|]", "[/]", "[-]", "[\\]")).stream()
-                .map(frame -> MiniMessage.miniMessage().deserialize(waiting.replace("{spinner}", frame)))
+                .map(frame -> MINI_MESSAGE.deserialize(waiting.replace("{spinner}", frame)))
                 .toList();
-        Title.Times titleTimes = Title.Times.times(
+        Title.Times notificationTitleTimes = Title.Times.times(
                 titles.millis("fade-in-ms", 300),
                 titles.millis("stay-ms", 2500),
                 titles.millis("fade-out-ms", 500));
+        Title.Times animationTitleTimes = Title.Times.times(
+                Duration.ZERO,
+                titles.millis("animation-stay-ms", 30000),
+                Duration.ZERO);
+        List<Title> waitingTitles = titleFrames(
+                titles, "waiting", "sent-to-limbo", DEFAULT_WAITING_TITLES, animationTitleTimes);
+        List<Title> connectingTitles = titleFrames(
+                titles, "connecting", "reconnecting", DEFAULT_CONNECTING_TITLES, animationTitleTimes);
 
         return new FailoverConfig(
                 root.string("limbo-server", "limbo"),
@@ -67,16 +85,50 @@ public final class ConfigLoader {
                         recovery.millis("ping-timeout-ms", 2000)),
                 root.strings("shutdown-keywords", List.of("Server closed", "Server shutting down")),
                 new FailoverConfig.Messages(
-                        notification(messages, titles, "sent-to-limbo",
-                                "<red>The server is temporarily unavailable. You will be moved back automatically when it returns.",
-                                "<red><bold>Server unavailable</bold>", "<gray>You will be moved back automatically", titleTimes),
-                        notification(messages, titles, "reconnecting",
-                                "<green>The server is back online! Reconnecting...",
-                                "<green><bold>Server is back online!</bold>", "<gray>Reconnecting...", titleTimes),
+                        messages.component("sent-to-limbo", "<red>The server is temporarily unavailable. You will be moved back automatically when it returns."),
+                        messages.component("reconnecting", "<green>The server is back online! Reconnecting..."),
                         notification(messages, titles, "connection-blocked",
                                 "<red>This server is currently unavailable. Please try again in a moment.",
-                                "<red><bold>Server unavailable</bold>", "<gray>Please try again in a moment", titleTimes)),
-                new FailoverConfig.ActionBar(actionBar.millis("interval-ms", 400), frames));
+                                "<red><bold>Server unavailable</bold>", "<gray>Please try again in a moment", notificationTitleTimes)),
+                new FailoverConfig.ActionBar(actionBar.millis("interval-ms", 400), frames),
+                new FailoverConfig.TitleAnimation(
+                        titles.millis("interval-ms", 1000), waitingTitles, connectingTitles));
+    }
+
+    private static List<Title> titleFrames(Section titles, String key, String legacyKey,
+                                           List<TitleFrame> fallbacks, Title.Times times) {
+        Object configured = titles.value(key);
+        if (configured != null) {
+            return parseTitleFrames(configured, times);
+        }
+
+        Object legacy = titles.value(legacyKey);
+        if (legacy != null) {
+            return parseTitleFrames(legacy, times);
+        }
+
+        return fallbacks.stream().map(frame -> title(frame.title(), frame.subtitle(), times)).toList();
+    }
+
+    private static List<Title> parseTitleFrames(Object configured, Title.Times times) {
+        if (configured instanceof List<?> list) {
+            return list.stream().map(Section::new).map(section -> title(section, times)).flatMap(Optional::stream).toList();
+        }
+
+        return title(new Section(configured), times).stream().toList();
+    }
+
+    private static Optional<Title> title(Section section, Title.Times times) {
+        String heading = section.string("title", "");
+        String subtitle = section.string("subtitle", "<gray>Please wait...");
+        if (heading.isBlank() && subtitle.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.of(title(heading, subtitle, times));
+    }
+
+    private static Title title(String heading, String subtitle, Title.Times times) {
+        return Title.title(MINI_MESSAGE.deserialize(heading), MINI_MESSAGE.deserialize(subtitle), times);
     }
 
     private static FailoverConfig.Notification notification(Section messages, Section titles, String key,
@@ -87,12 +139,11 @@ public final class ConfigLoader {
         String subtitle = configuredTitle.string("subtitle", fallbackSubtitle);
         Optional<Title> title = heading.isBlank() && subtitle.isBlank()
                 ? Optional.empty()
-                : Optional.of(Title.title(
-                        MiniMessage.miniMessage().deserialize(heading),
-                        MiniMessage.miniMessage().deserialize(subtitle),
-                        times));
+                : Optional.of(title(heading, subtitle, times));
         return new FailoverConfig.Notification(messages.component(key, fallback), title);
     }
+
+    private record TitleFrame(String title, String subtitle) {}
 
     /** One mapping of the YAML tree; anything that is not a mapping reads as empty. */
     private record Section(Map<String, Object> values) {
@@ -104,6 +155,10 @@ public final class ConfigLoader {
 
         Section section(String key) {
             return new Section(values.get(key));
+        }
+
+        Object value(String key) {
+            return values.get(key);
         }
 
         String string(String key, String fallback) {
@@ -124,7 +179,7 @@ public final class ConfigLoader {
         }
 
         Component component(String key, String fallback) {
-            return MiniMessage.miniMessage().deserialize(string(key, fallback));
+            return MINI_MESSAGE.deserialize(string(key, fallback));
         }
     }
 }

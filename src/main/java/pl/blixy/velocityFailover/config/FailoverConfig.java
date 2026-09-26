@@ -11,12 +11,12 @@ import java.util.Set;
 
 /** Everything read from config.yml, with the messages already parsed so no handler parses MiniMessage per player. */
 public record FailoverConfig(String limbo, Set<String> servers, Recovery recovery, List<String> shutdownKeywords,
-                             Messages messages, ActionBar actionBar) {
+                             Messages messages, ActionBar actionBar, TitleAnimation titleAnimation) {
 
     public record Recovery(Duration pingInterval, int pingsToReady, Duration gracePeriod, Duration transferInterval,
                            Duration pingTimeout) {}
 
-    public record Messages(Notification sentToLimbo, Notification reconnecting, Notification connectionBlocked) {}
+    public record Messages(Component sentToLimbo, Component reconnecting, Notification connectionBlocked) {}
 
     /** A chat message with an optional title shown at the same point in the failover flow. */
     public record Notification(Component chat, Optional<Title> title) {
@@ -33,6 +33,9 @@ public record FailoverConfig(String limbo, Set<String> servers, Recovery recover
 
     /** One rendered action bar per spinner frame, cycled every {@code interval}. */
     public record ActionBar(Duration interval, List<Component> frames) {}
+
+    /** Persistent title frames shown while the player waits and while their server is recovering. */
+    public record TitleAnimation(Duration interval, List<Title> waitingFrames, List<Title> connectingFrames) {}
 
     /** Whether the player is parked on the limbo server right now. */
     public boolean isLimbo(Player player) {

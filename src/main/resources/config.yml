@@ -42,19 +42,31 @@ messages:
   # Action bar shown to players waiting on the limbo server. {spinner} is replaced with the current frame.
   waiting-action-bar: "<yellow>Connecting to the server <gray>{spinner}"
 
-# Titles shown together with the matching chat messages.
-# These defaults also apply to existing configs without this section.
-# Set both title and subtitle to "" to disable a title.
+# Persistent animated titles shown while players wait on limbo.
+# These defaults also apply to existing configs without this section. Use [] to disable an animation.
 titles:
+  # Delay between animation frames (ms). 1000 ms matches LimboReconnect's default 20 ticks.
+  interval-ms: 1000
+  # Each frame deliberately stays longer than the interval so the title never disappears between updates.
+  animation-stay-ms: 30000
+  waiting:
+    - title: "<red><bold>Server unavailable.</bold>"
+      subtitle: "<gray>Please wait..."
+    - title: "<red><bold>Server unavailable..</bold>"
+      subtitle: "<gray>Please wait..."
+    - title: "<red><bold>Server unavailable...</bold>"
+      subtitle: "<gray>Please wait..."
+  connecting:
+    - title: "<green><bold>Reconnecting.</bold>"
+      subtitle: "<gray>Please wait..."
+    - title: "<green><bold>Reconnecting..</bold>"
+      subtitle: "<gray>Please wait..."
+    - title: "<green><bold>Reconnecting...</bold>"
+      subtitle: "<gray>Please wait..."
+  # Timing and content for the one-off title shown when a connection attempt is blocked.
   fade-in-ms: 300
   stay-ms: 2500
   fade-out-ms: 500
-  sent-to-limbo:
-    title: "<red><bold>Server unavailable</bold>"
-    subtitle: "<gray>You will be moved back automatically"
-  reconnecting:
-    title: "<green><bold>Server is back online!</bold>"
-    subtitle: "<gray>Reconnecting..."
   connection-blocked:
     title: "<red><bold>Server unavailable</bold>"
     subtitle: "<gray>Please try again in a moment"

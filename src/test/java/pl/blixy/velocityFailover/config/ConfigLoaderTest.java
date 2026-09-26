@@ -32,9 +32,11 @@ class ConfigLoaderTest {
 
         FailoverConfig config = ConfigLoader.load(directory);
 
-        assertEquals("Waiting", PLAIN.serialize(config.messages().sentToLimbo().chat()));
-        assertEquals("Server unavailable", PLAIN.serialize(config.messages().sentToLimbo().title().orElseThrow().title()));
-        assertEquals("Server is back online!", PLAIN.serialize(config.messages().reconnecting().title().orElseThrow().title()));
+        assertEquals("Waiting", PLAIN.serialize(config.messages().sentToLimbo()));
+        assertEquals(3, config.titleAnimation().waitingFrames().size());
+        assertEquals(3, config.titleAnimation().connectingFrames().size());
+        assertEquals("Server unavailable.", PLAIN.serialize(config.titleAnimation().waitingFrames().getFirst().title()));
+        assertEquals("Reconnecting.", PLAIN.serialize(config.titleAnimation().connectingFrames().getFirst().title()));
         assertEquals("Server unavailable", PLAIN.serialize(config.messages().connectionBlocked().title().orElseThrow().title()));
     }
 
@@ -49,33 +51,51 @@ class ConfigLoaderTest {
 
         FailoverConfig config = ConfigLoader.load(directory);
 
-        assertTrue(config.messages().sentToLimbo().title().isEmpty());
-        assertTrue(config.messages().reconnecting().title().isPresent());
+        assertTrue(config.titleAnimation().waitingFrames().isEmpty());
+        assertEquals(3, config.titleAnimation().connectingFrames().size());
     }
 
     @Test
     void parsesTitlesAndTheirTimings() throws IOException {
         writeConfig("""
                 titles:
+                  interval-ms: 750
+                  animation-stay-ms: 10000
                   fade-in-ms: 150
                   stay-ms: 1800
                   fade-out-ms: 350
-                  sent-to-limbo:
-                    title: "<red>Unavailable"
-                    subtitle: "Please wait"
+                  waiting:
+                    - title: "<red>Unavailable."
+                      subtitle: "Please wait"
+                    - title: "<red>Unavailable.."
+                      subtitle: "Please wait"
+                  connecting:
+                    - title: "<green>Connecting"
+                      subtitle: "Almost ready"
+                  connection-blocked:
+                    title: "<red>Blocked"
+                    subtitle: "Try later"
                 """);
 
         FailoverConfig config = ConfigLoader.load(directory);
-        Title title = config.messages().sentToLimbo().title().orElseThrow();
-        Title.Times times = title.times();
+        Title waitingTitle = config.titleAnimation().waitingFrames().getFirst();
+        Title.Times animationTimes = waitingTitle.times();
+        Title blockedTitle = config.messages().connectionBlocked().title().orElseThrow();
+        Title.Times notificationTimes = blockedTitle.times();
 
-        assertEquals("Unavailable", PLAIN.serialize(title.title()));
-        assertEquals("Please wait", PLAIN.serialize(title.subtitle()));
-        assertNotNull(times);
-        assertEquals(Duration.ofMillis(150), times.fadeIn());
-        assertEquals(Duration.ofMillis(1800), times.stay());
-        assertEquals(Duration.ofMillis(350), times.fadeOut());
-        assertTrue(config.messages().reconnecting().title().isPresent());
+        assertEquals(Duration.ofMillis(750), config.titleAnimation().interval());
+        assertEquals(2, config.titleAnimation().waitingFrames().size());
+        assertEquals(1, config.titleAnimation().connectingFrames().size());
+        assertEquals("Unavailable.", PLAIN.serialize(waitingTitle.title()));
+        assertEquals("Please wait", PLAIN.serialize(waitingTitle.subtitle()));
+        assertNotNull(animationTimes);
+        assertEquals(Duration.ZERO, animationTimes.fadeIn());
+        assertEquals(Duration.ofMillis(10000), animationTimes.stay());
+        assertEquals(Duration.ZERO, animationTimes.fadeOut());
+        assertNotNull(notificationTimes);
+        assertEquals(Duration.ofMillis(150), notificationTimes.fadeIn());
+        assertEquals(Duration.ofMillis(1800), notificationTimes.stay());
+        assertEquals(Duration.ofMillis(350), notificationTimes.fadeOut());
     }
 
     private void writeConfig(String yaml) throws IOException {
